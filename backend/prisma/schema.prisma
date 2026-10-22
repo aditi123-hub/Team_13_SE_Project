@@ -28,3 +28,10 @@ enum UserRole {
   MANAGER
   ADMIN
 }
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  event     String
+  outcome   String
+  timestamp DateTime @default(now())
+}
