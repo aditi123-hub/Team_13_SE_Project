@@ -103,6 +103,7 @@ router.get("/status/:referenceNumber", requireAuth, async (req, res) => {
       where: { referenceNumber },
       select: {
         referenceNumber: true,
+        userId: true,
         accountType: true,
         status: true,
         rejectionReason: true,
@@ -118,20 +119,14 @@ router.get("/status/:referenceNumber", requireAuth, async (req, res) => {
     }
 
     // Customers can only view their own applications
-    if (req.user.role === "CUSTOMER") {
-      const fullApp = await prisma.kycApplication.findUnique({
-        where: { referenceNumber },
-        select: { userId: true },
+    if (req.user.role === "CUSTOMER" && application.userId !== req.user.id) {
+      return res.status(403).json({
+        error: "Access denied",
       });
-
-      if (fullApp.userId !== req.user.id) {
-        return res.status(403).json({
-          error: "Access denied",
-        });
-      }
     }
 
-    return res.status(200).json(application);
+    const { userId: _, ...response } = application;
+    return res.status(200).json(response);
   } catch (error) {
     console.error("KYC status error:", error.message);
 
@@ -220,13 +215,15 @@ router.post("/decision/:id", requireManager, async (req, res) => {
       });
     }
 
-    if (!decision || !["APPROVED", "REJECTED"].includes(decision)) {
+    const normalizedDecision = decision?.toUpperCase();
+
+    if (!normalizedDecision || !["APPROVED", "REJECTED"].includes(normalizedDecision)) {
       return res.status(400).json({
         error: "Decision must be APPROVED or REJECTED",
       });
     }
 
-    if (decision === "REJECTED" && !rejectionReason?.trim()) {
+    if (normalizedDecision === "REJECTED" && !rejectionReason?.trim()) {
       return res.status(400).json({
         error: "A rejection reason is required",
       });
@@ -251,8 +248,8 @@ router.post("/decision/:id", requireManager, async (req, res) => {
     const updated = await prisma.kycApplication.update({
       where: { id },
       data: {
-        status: decision,
-        rejectionReason: decision === "REJECTED" ? rejectionReason.trim() : null,
+        status: normalizedDecision,
+        rejectionReason: normalizedDecision === "REJECTED" ? rejectionReason.trim() : null,
         reviewedBy: managerId,
         reviewedAt: new Date(),
       },
@@ -261,13 +258,13 @@ router.post("/decision/:id", requireManager, async (req, res) => {
     await prisma.auditLog.create({
       data: {
         userId: managerId,
-        event: `KYC_APPLICATION_${decision}`,
+        event: `KYC_APPLICATION_${normalizedDecision}`,
         outcome: `REF:${application.referenceNumber}`,
       },
     });
 
     return res.status(200).json({
-      message: `Application ${decision.toLowerCase()} successfully`,
+      message: `Application ${normalizedDecision.toLowerCase()} successfully`,
       referenceNumber: updated.referenceNumber,
       status: updated.status,
       rejectionReason: updated.rejectionReason,
