@@ -3,3 +3,10 @@ node_modules
 .env
 
 /generated/prisma
+
+# SSL/TLS Certificates (use proper certificates in production)
+certs/
+*.pem
+*.key
+*.crt
+*.cert
