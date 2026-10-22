@@ -10,16 +10,17 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  fullName     String
-  email        String   @unique
-  mobile       String?  @unique
-  passwordHash String
-  role         UserRole @default(CUSTOMER)
-  failedLogins Int      @default(0)
-  lockedUntil  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  fullName        String
+  email           String   @unique
+  mobile          String?  @unique
+  governmentIdNum String?  @unique
+  passwordHash    String
+  role            UserRole @default(CUSTOMER)
+  failedLogins    Int      @default(0)
+  lockedUntil     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 enum UserRole {
