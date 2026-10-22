@@ -29,6 +29,40 @@ enum UserRole {
   MANAGER
   ADMIN
 }
+
+model KycApplication {
+  id              Int               @id @default(autoincrement())
+  referenceNumber String            @unique
+  userId          Int
+  accountType     AccountType
+  status          KycStatus         @default(PENDING)
+  rejectionReason String?
+  reviewedBy      Int?
+  reviewedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  documents       KycDocument[]
+}
+
+model KycDocument {
+  id             Int            @id @default(autoincrement())
+  applicationId  Int
+  documentType   String
+  documentValue  String
+  application    KycApplication @relation(fields: [applicationId], references: [id])
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AccountType {
+  SAVINGS
+  CURRENT
+}
+
 model AuditLog {
   id        Int      @id @default(autoincrement())
   userId    Int?
