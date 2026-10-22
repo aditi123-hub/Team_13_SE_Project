@@ -8,6 +8,123 @@ const { sendOtp, verifyOtp } = require("../services/otpService");
 
 const router = express.Router();
 
+// Customer Registration Endpoint (BMS-F-001)
+router.post("/register", async (req, res) => {
+  try {
+    const { fullName, email, mobile, governmentIdNum, password } = req.body;
+
+    // Validate required fields
+    if (!fullName || !email || !password) {
+      return res.status(400).json({
+        error: "Full name, email, and password are required",
+      });
+    }
+
+    if (!governmentIdNum && !mobile) {
+      return res.status(400).json({
+        error: "Either mobile number or government ID number is required",
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: "Invalid email format",
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: "Password must be at least 8 characters long",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check for duplicate email
+    const existingEmail = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (existingEmail) {
+      return res.status(409).json({
+        error: "An account with this email already exists",
+      });
+    }
+
+    // Check for duplicate mobile if provided
+    if (mobile) {
+      const existingMobile = await prisma.user.findUnique({
+        where: { mobile: mobile.trim() },
+      });
+
+      if (existingMobile) {
+        return res.status(409).json({
+          error: "An account with this mobile number already exists",
+        });
+      }
+    }
+
+    // Check for duplicate government ID if provided
+    if (governmentIdNum) {
+      const existingGovId = await prisma.user.findUnique({
+        where: { governmentIdNum: governmentIdNum.trim() },
+      });
+
+      if (existingGovId) {
+        return res.status(409).json({
+          error: "An account with this government ID already exists",
+        });
+      }
+    }
+
+    // Hash password using bcrypt with salt (BMS-SR-002)
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Create new user
+    const newUser = await prisma.user.create({
+      data: {
+        fullName: fullName.trim(),
+        email: normalizedEmail,
+        mobile: mobile ? mobile.trim() : null,
+        governmentIdNum: governmentIdNum ? governmentIdNum.trim() : null,
+        passwordHash,
+        role: "CUSTOMER",
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        mobile: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    // Log successful registration (without sensitive data)
+    await prisma.auditLog.create({
+      data: {
+        userId: newUser.id,
+        event: "CUSTOMER_REGISTRATION",
+        outcome: "SUCCESS",
+      },
+    });
+
+    return res.status(201).json({
+      message: "Customer registered successfully",
+      user: newUser,
+    });
+  } catch (error) {
+    console.error("Registration error:", error.message);
+
+    return res.status(500).json({
+      error: "Unable to complete registration",
+    });
+  }
+});
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
