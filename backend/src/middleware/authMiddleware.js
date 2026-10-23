@@ -138,4 +138,70 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-module.exports = { requireAuth, requireManager, requireAdmin };
+
+function requireRole(...allowedRoles) {
+  return async (req, res, next) => {
+    try {
+      const decoded = verifyToken(req);
+
+      if (!decoded) {
+        return res.status(401).json({
+          error: "Authentication token required",
+        });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { id: true, role: true },
+      });
+
+      if (!user) {
+        return res.status(401).json({
+          error: "User not found",
+        });
+      }
+
+      if (!allowedRoles.includes(user.role)) {
+        return res.status(403).json({
+          error: "You are not authorized to access this resource",
+        });
+      }
+
+      req.user = user;
+      return next();
+    } catch (error) {
+      if (
+        error.name === "JsonWebTokenError" ||
+        error.name === "TokenExpiredError"
+      ) {
+        return res.status(401).json({
+          error: "Invalid or expired authentication token",
+        });
+      }
+
+      console.error("Role authorization error:", error.message);
+      return res.status(500).json({
+        error: "Unable to authorize request",
+      });
+    }
+  };
+}
+
+
+
+function requireTeller(req, res, next) {
+  return requireRole("TELLER")(req, res, next);
+}
+
+function requireCustomer(req, res, next) {
+  return requireRole("CUSTOMER")(req, res, next);
+}
+
+module.exports = {
+  requireAuth,
+  requireManager,
+  requireAdmin,
+  requireRole,
+  requireTeller,
+  requireCustomer,
+};

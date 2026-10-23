@@ -326,4 +326,63 @@ router.post("/unlock/:userId", requireAdmin, async (req, res) => {
     });
   }
 });
+
+// Admin updates a user's role (BMS-F-004)
+router.patch("/role/:userId", requireAdmin, async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    const { role } = req.body;
+
+    const allowedRoles = ["CUSTOMER", "TELLER", "MANAGER", "ADMIN"];
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        error: "Invalid user ID",
+      });
+    }
+
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        error: "Role must be CUSTOMER, TELLER, MANAGER, or ADMIN",
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: { id: true, role: true },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        event: "ADMIN_ROLE_UPDATED",
+        outcome: `USER:${userId};ROLE:${role}`,
+      },
+    });
+
+    return res.status(200).json({
+      message: "User role updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Role update error:", error.message);
+
+    return res.status(500).json({
+      error: "Unable to update user role",
+    });
+  }
+});
+
 module.exports = router;
