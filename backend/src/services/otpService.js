@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const otpStore = new Map();
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_ATTEMPTS = 5;
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -16,7 +17,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-async function sendOtp(email) {
+// purpose distinguishes login OTPs from transfer OTPs
+async function sendOtp(email, purpose = "LOGIN") {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER ||
       !process.env.SMTP_PASS) {
     throw new Error("Email service is not configured");
@@ -24,32 +26,45 @@ async function sendOtp(email) {
 
   const otp = crypto.randomInt(100000, 1000000).toString();
 
+  const subjects = {
+    LOGIN: "Bank Management System - Login OTP",
+    TRANSFER: "Bank Management System - Transfer Verification OTP",
+  };
+
+  const texts = {
+    LOGIN: `Your login OTP is ${otp}. It expires in 5 minutes.`,
+    TRANSFER: `Your transfer verification OTP is ${otp}. It expires in 5 minutes. Do not share this with anyone.`,
+  };
+
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: email,
-    subject: "Bank Management System - Login OTP",
-    text: `Your login OTP is ${otp}. It expires in 5 minutes.`,
+    subject: subjects[purpose] || subjects.LOGIN,
+    text: texts[purpose] || texts.LOGIN,
   });
 
-  otpStore.set(email, {
+  const key = `${purpose}:${email}`;
+
+  otpStore.set(key, {
     hash: crypto.createHash("sha256").update(otp).digest("hex"),
     expiresAt: Date.now() + OTP_EXPIRY_MS,
     attempts: 0,
   });
 }
 
-function verifyOtp(email, submittedOtp) {
-  const record = otpStore.get(email);
+function verifyOtp(email, submittedOtp, purpose = "LOGIN") {
+  const key = `${purpose}:${email}`;
+  const record = otpStore.get(key);
 
   if (!record || Date.now() > record.expiresAt) {
-    otpStore.delete(email);
+    otpStore.delete(key);
     return false;
   }
 
   record.attempts += 1;
 
-  if (record.attempts > 5) {
-    otpStore.delete(email);
+  if (record.attempts > MAX_ATTEMPTS) {
+    otpStore.delete(key);
     return false;
   }
 
@@ -64,7 +79,7 @@ function verifyOtp(email, submittedOtp) {
   );
 
   if (valid) {
-    otpStore.delete(email);
+    otpStore.delete(key);
   }
 
   return valid;
