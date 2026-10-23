@@ -1,5 +1,9 @@
 const express = require("express");
-const { requireAuth, requireManager } = require("../middleware/authMiddleware");
+const {
+  requireAuth,
+  requireManager,
+  requireCustomer,
+} = require("../middleware/authMiddleware");
 const prisma = require("../config/prisma");
 const { randomUUID } = require("crypto");
 
@@ -7,7 +11,7 @@ const router = express.Router();
 
 // BMS-F-005: Account Opening with KYC
 // Customer submits an account opening application with KYC documents
-router.post("/apply", requireAuth, async (req, res) => {
+router.post("/apply", requireCustomer, async (req, res) => {
   try {
     const { accountType, documents } = req.body;
     const userId = req.user.id;
