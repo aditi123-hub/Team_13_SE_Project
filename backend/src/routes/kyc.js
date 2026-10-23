@@ -245,23 +245,26 @@ router.post("/decision/:id", requireManager, async (req, res) => {
       });
     }
 
-    const updated = await prisma.kycApplication.update({
-      where: { id },
-      data: {
-        status: normalizedDecision,
-        rejectionReason: normalizedDecision === "REJECTED" ? rejectionReason.trim() : null,
-        reviewedBy: managerId,
-        reviewedAt: new Date(),
-      },
-    });
-
-    await prisma.auditLog.create({
-      data: {
-        userId: managerId,
-        event: `KYC_APPLICATION_${normalizedDecision}`,
-        outcome: `REF:${application.referenceNumber}`,
-      },
-    });
+    // Wrap status update and audit log in a transaction so both
+    // succeed or both fail together (addresses review feedback)
+    const [updated] = await prisma.$transaction([
+      prisma.kycApplication.update({
+        where: { id },
+        data: {
+          status: normalizedDecision,
+          rejectionReason: normalizedDecision === "REJECTED" ? rejectionReason.trim() : null,
+          reviewedBy: managerId,
+          reviewedAt: new Date(),
+        },
+      }),
+      prisma.auditLog.create({
+        data: {
+          userId: managerId,
+          event: `KYC_APPLICATION_${normalizedDecision}`,
+          outcome: `REF:${application.referenceNumber}`,
+        },
+      }),
+    ]);
 
     return res.status(200).json({
       message: `Application ${normalizedDecision.toLowerCase()} successfully`,
