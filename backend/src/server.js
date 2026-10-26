@@ -5,17 +5,17 @@ const fs = require("fs");
 const tls = require("tls");
 const authRoutes = require("./routes/auth");
 const kycRoutes = require("./routes/kyc");
-
+const auditLogRoutes = require("./routes/auditLogs");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 
 // Middleware
 app.use(express.json());
-
 // Routes
 app.use("/auth", authRoutes);
 app.use("/kyc", kycRoutes);
+app.use("/audit-logs", auditLogRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
