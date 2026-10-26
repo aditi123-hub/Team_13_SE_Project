@@ -63,13 +63,19 @@ enum AccountType {
   CURRENT
 }
 
+
 model AuditLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int?
-  event     String
-  outcome   String
-  timestamp DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  userId       Int?
+  event        String
+  outcome      String
+  timestamp    DateTime @default(now())
+  previousHash String?
+  recordHash   String?
+
+  @@index([timestamp])
 }
+
 model UserSession {
   id             String   @id @default(uuid())
   userId         Int

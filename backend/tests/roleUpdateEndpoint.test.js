@@ -1,4 +1,4 @@
-
+const auditLogger = require("../src/services/auditLogger");
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const express = require("express");
@@ -172,7 +172,7 @@ test("Nonexistent user is rejected", async () => {
 test("Admin can update a user's role and audit the change", async () => {
   const originalFindUnique = prisma.user.findUnique;
   const originalUpdate = prisma.user.update;
-  const originalAuditCreate = prisma.auditLog.create;
+  const originalRecordAuditLog = auditLogger.recordAuditLog;
 
   const auditEntries = [];
 
@@ -193,10 +193,10 @@ test("Admin can update a user's role and audit the change", async () => {
     role: data.role,
   });
 
-  prisma.auditLog.create = async ({ data }) => {
-    auditEntries.push(data);
-    return data;
-  };
+  auditLogger.recordAuditLog = async (data) => {
+  auditEntries.push(data);
+  return data;
+};
 
   try {
     const { res } = await callRoleUpdate({ role: "TELLER" });
@@ -212,6 +212,6 @@ test("Admin can update a user's role and audit the change", async () => {
   } finally {
     prisma.user.findUnique = originalFindUnique;
     prisma.user.update = originalUpdate;
-    prisma.auditLog.create = originalAuditCreate;
+    auditLogger.recordAuditLog = originalRecordAuditLog;
   }
 });

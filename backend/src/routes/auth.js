@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
 const { sendOtp, verifyOtp } = require("../services/otpService");
+const auditLogger = require("../services/auditLogger");
 
 const router = express.Router();
 
@@ -105,13 +106,11 @@ router.post("/register", async (req, res) => {
     });
 
     // Log successful registration (without sensitive data)
-    await prisma.auditLog.create({
-      data: {
-        userId: newUser.id,
-        event: "CUSTOMER_REGISTRATION",
-        outcome: "SUCCESS",
-      },
-    });
+    await auditLogger.recordAuditLog({
+  userId: newUser.id,
+  event: "CUSTOMER_REGISTRATION",
+  outcome: "SUCCESS",
+});
 
     return res.status(201).json({
       message: "Customer registered successfully",
@@ -147,10 +146,16 @@ router.post("/login", async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({
-        error: "Invalid email or password",
-      });
-    }
+  await auditLogger.recordAuditLog({
+    userId: null,
+    event: "LOGIN_ATTEMPT",
+    outcome: "FAILURE",
+  });
+
+  return res.status(401).json({
+    error: "Invalid email or password",
+  });
+}
 
     // Reject login while the account is locked.
     if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -188,31 +193,33 @@ router.post("/login", async (req, res) => {
         },
       });
 
-      if (lockedUntil) {
-  await prisma.auditLog.create({
-    data: {
-      userId: user.id,
-      event: "LOGIN_LOCKOUT",
-      outcome: "ACCOUNT_LOCKED",
-    },
-  });
+      await auditLogger.recordAuditLog({
+  userId: user.id,
+  event: "LOGIN_ATTEMPT",
+  outcome: lockedUntil ? "ACCOUNT_LOCKED" : "FAILURE",
+});
 
+if (lockedUntil) {
   return res.status(423).json({
     error: "Account locked after 5 failed login attempts. Try again in 15 minutes.",
   });
 }
 
-      return res.status(401).json({
-        error: "Invalid email or password",
-        remainingAttempts: MAX_FAILED_ATTEMPTS - failedLogins,
-      });
-    }
+return res.status(401).json({
+  error: "Invalid email or password",
+  remainingAttempts: MAX_FAILED_ATTEMPTS - failedLogins,
+});}
 
     // A correct password resets consecutive failed attempts.
     await prisma.user.update({
       where: { id: user.id },
       data: { failedLogins: 0, lockedUntil: null },
     });
+    await auditLogger.recordAuditLog({
+  userId: user.id,
+  event: "LOGIN_PASSWORD_VERIFIED",
+  outcome: "SUCCESS",
+});
 
     await sendOtp(user.email);
 
@@ -246,10 +253,16 @@ router.post("/verify-otp", async (req, res) => {
     });
 
     if (!user || !verifyOtp(normalizedEmail, otp)) {
-      return res.status(401).json({
-        error: "Invalid or expired OTP",
-      });
-    }
+  await auditLogger.recordAuditLog({
+    userId: user?.id ?? null,
+    event: "OTP_VERIFICATION",
+    outcome: "FAILURE",
+  });
+
+  return res.status(401).json({
+    error: "Invalid or expired OTP",
+  });
+}
 
     if (!process.env.JWT_SECRET) {
       console.error("JWT_SECRET is not configured");
@@ -280,6 +293,11 @@ const token = jwt.sign(
   process.env.JWT_SECRET,
   { expiresIn: "1h" }
 );
+await auditLogger.recordAuditLog({
+  userId: user.id,
+  event: "OTP_VERIFICATION",
+  outcome: "SUCCESS",
+});
 
     return res.status(200).json({
       message: "Login successful",
@@ -323,13 +341,11 @@ router.post("/unlock/:userId", requireAdmin, async (req, res) => {
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        event: "ADMIN_ACCOUNT_UNLOCK",
-        outcome: "ACCOUNT_UNLOCKED",
-      },
-    });
+    await auditLogger.recordAuditLog({
+  userId,
+  event: "ADMIN_ACCOUNT_UNLOCK",
+  outcome: "ACCOUNT_UNLOCKED",
+});
 
     return res.status(200).json({
       message: "Account unlocked successfully",
@@ -380,13 +396,11 @@ router.patch("/role/:userId", requireAdmin, async (req, res) => {
       select: { id: true, role: true },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: req.user.id,
-        event: "ADMIN_ROLE_UPDATED",
-        outcome: `USER:${userId};ROLE:${role}`,
-      },
-    });
+    await auditLogger.recordAuditLog({
+  userId: req.user.id,
+  event: "ADMIN_ROLE_UPDATED",
+  outcome: `USER:${userId};ROLE:${role}`,
+});
 
     return res.status(200).json({
       message: "User role updated successfully",

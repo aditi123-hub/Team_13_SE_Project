@@ -6,7 +6,7 @@ const {
 } = require("../middleware/authMiddleware");
 const prisma = require("../config/prisma");
 const { randomUUID } = require("crypto");
-
+const { recordAuditLog } = require("../services/auditLogger");
 const router = express.Router();
 
 // BMS-F-005: Account Opening with KYC
@@ -75,13 +75,11 @@ router.post("/apply", requireCustomer, async (req, res) => {
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        event: "KYC_APPLICATION_SUBMITTED",
-        outcome: `REF:${referenceNumber}`,
-      },
-    });
+    await recordAuditLog({
+  userId,
+  event: "KYC_APPLICATION_SUBMITTED",
+  outcome: `REF:${referenceNumber}`,
+});
 
     return res.status(201).json({
       message: "KYC application submitted successfully",
@@ -262,13 +260,11 @@ router.post("/decision/:id", requireManager, async (req, res) => {
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: managerId,
-        event: `KYC_APPLICATION_${decision}`,
-        outcome: `REF:${application.referenceNumber}`,
-      },
-    });
+    await recordAuditLog({
+  userId: managerId,
+  event: `KYC_APPLICATION_${decision}`,
+  outcome: `REF:${application.referenceNumber}`,
+});
 
     return res.status(200).json({
       message: `Application ${decision.toLowerCase()} successfully`,
