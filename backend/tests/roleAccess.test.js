@@ -25,17 +25,31 @@ function createResponse() {
   };
 }
 
+
 async function checkRole(userId, actualRole, allowedRoles) {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET);
+  const sessionId = `test-session-${userId}`;
+
+  const token = jwt.sign(
+    { userId, role: actualRole, sessionId },
+    process.env.JWT_SECRET
+  );
+
   const req = {
     headers: { authorization: `Bearer ${token}` },
   };
   const res = createResponse();
+
   const originalFindUnique = prisma.user.findUnique;
+  const originalUpdateMany = prisma.userSession.updateMany;
 
   prisma.user.findUnique = async () => ({
     id: userId,
     role: actualRole,
+  });
+
+  prisma.userSession.updateMany = async ({ where }) => ({
+    count:
+      where.id === sessionId && where.userId === userId ? 1 : 0,
   });
 
   let nextCalled = false;
@@ -48,8 +62,10 @@ async function checkRole(userId, actualRole, allowedRoles) {
     return { req, res, nextCalled };
   } finally {
     prisma.user.findUnique = originalFindUnique;
+    prisma.userSession.updateMany = originalUpdateMany;
   }
 }
+
 
 test("Customer is forbidden from Admin-only access", async () => {
   const result = await checkRole(101, "CUSTOMER", ["ADMIN"]);
