@@ -70,3 +70,13 @@ model AuditLog {
   outcome   String
   timestamp DateTime @default(now())
 }
+model UserSession {
+  id             String   @id @default(uuid())
+  userId         Int
+  lastActivityAt DateTime @default(now())
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}

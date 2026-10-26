@@ -25,7 +25,19 @@ function createResponse() {
 
 test("Non-admin cannot pass admin authorization", async () => {
   const originalFindUnique = prisma.user.findUnique;
-  const token = jwt.sign({ userId: 101 }, process.env.JWT_SECRET);
+  const originalUpdateMany = prisma.userSession.updateMany;
+
+  const sessionId = "test-session-101";
+
+  const token = jwt.sign(
+    { userId: 101, role: "CUSTOMER", sessionId },
+    process.env.JWT_SECRET
+  );
+
+  prisma.userSession.updateMany = async ({ where }) => ({
+    count:
+      where.id === sessionId && where.userId === 101 ? 1 : 0,
+  });
 
   prisma.user.findUnique = async () => ({
     id: 101,
@@ -47,12 +59,25 @@ test("Non-admin cannot pass admin authorization", async () => {
     assert.equal(nextCalled, false);
   } finally {
     prisma.user.findUnique = originalFindUnique;
+    prisma.userSession.updateMany = originalUpdateMany;
   }
 });
 
 test("Admin passes authorization and is attached to request", async () => {
   const originalFindUnique = prisma.user.findUnique;
-  const token = jwt.sign({ userId: 102 }, process.env.JWT_SECRET);
+  const originalUpdateMany = prisma.userSession.updateMany;
+
+  const sessionId = "test-session-102";
+
+  const token = jwt.sign(
+    { userId: 102, role: "ADMIN", sessionId },
+    process.env.JWT_SECRET
+  );
+
+  prisma.userSession.updateMany = async ({ where }) => ({
+    count:
+      where.id === sessionId && where.userId === 102 ? 1 : 0,
+  });
 
   prisma.user.findUnique = async () => ({
     id: 102,
@@ -75,5 +100,6 @@ test("Admin passes authorization and is attached to request", async () => {
     assert.equal(req.user.role, "ADMIN");
   } finally {
     prisma.user.findUnique = originalFindUnique;
+    prisma.userSession.updateMany = originalUpdateMany;
   }
 });
