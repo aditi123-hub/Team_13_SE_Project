@@ -9,13 +9,6 @@ process.env.JWT_SECRET = "test-secret";
 const prisma = require("../src/config/prisma");
 const authRoutes = require("../src/routes/auth");
 
-function createApp() {
-  const app = express();
-  app.use(express.json());
-  app.use("/auth", authRoutes);
-  return app;
-}
-
 function createResponse() {
   return {
     statusCode: 200,
@@ -31,10 +24,15 @@ function createResponse() {
   };
 }
 
+async function callRoleUpdate({
+  role,
+  userId = "201",
+  tokenRole = "ADMIN",
+}) {
+  const sessionId = "test-session-100";
 
-async function callRoleUpdate({ role, userId = "201", tokenRole = "ADMIN" }) {
   const token = jwt.sign(
-    { userId: 100, role: tokenRole },
+    { userId: 100, role: tokenRole, sessionId },
     process.env.JWT_SECRET
   );
 
@@ -46,32 +44,41 @@ async function callRoleUpdate({ role, userId = "201", tokenRole = "ADMIN" }) {
 
   const res = createResponse();
 
-  const handler = authRoutes.stack.find(
-    (layer) =>
-      layer.route?.path === "/role/:userId" &&
-      layer.route.methods.patch
-  );
+  const originalSessionUpdateMany = prisma.userSession.updateMany;
 
-  assert.ok(handler, "Role update route should exist");
+  prisma.userSession.updateMany = async ({ where }) => ({
+    count:
+      where.id === sessionId && where.userId === 100 ? 1 : 0,
+  });
 
-  const layers = handler.route.stack;
+  try {
+    const handler = authRoutes.stack.find(
+      (layer) =>
+        layer.route?.path === "/role/:userId" &&
+        layer.route.methods.patch
+    );
 
-  // Run the route middleware in order, stopping if a response is sent.
-  for (const layer of layers) {
-    let nextCalled = false;
+    assert.ok(handler, "Role update route should exist");
 
-    await layer.handle(req, res, () => {
-      nextCalled = true;
-    });
+    const layers = handler.route.stack;
 
-    if (!nextCalled) {
-      break;
+    for (const layer of layers) {
+      let nextCalled = false;
+
+      await layer.handle(req, res, () => {
+        nextCalled = true;
+      });
+
+      if (!nextCalled) {
+        break;
+      }
     }
+
+    return { res };
+  } finally {
+    prisma.userSession.updateMany = originalSessionUpdateMany;
   }
-
-  return { res };
 }
-
 
 test("Role update route exists", () => {
   const handler = authRoutes.stack.find(
@@ -113,6 +120,7 @@ test("Invalid user ID is rejected", async () => {
       role: "TELLER",
       userId: "abc",
     });
+
     assert.equal(res.statusCode, 400);
     assert.equal(res.body.error, "Invalid user ID");
   } finally {
@@ -140,17 +148,14 @@ test("Non-admin cannot update a user's role", async () => {
   }
 });
 
-
 test("Nonexistent user is rejected", async () => {
   const originalFindUnique = prisma.user.findUnique;
 
   prisma.user.findUnique = async ({ where }) => {
-    // Allow the admin authentication check to succeed.
     if (where.id === 100) {
       return { id: 100, role: "ADMIN" };
     }
 
-    // The target user does not exist.
     return null;
   };
 
@@ -163,7 +168,6 @@ test("Nonexistent user is rejected", async () => {
     prisma.user.findUnique = originalFindUnique;
   }
 });
-
 
 test("Admin can update a user's role and audit the change", async () => {
   const originalFindUnique = prisma.user.findUnique;

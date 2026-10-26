@@ -259,11 +259,27 @@ router.post("/verify-otp", async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    const idleTimeoutMs =
+  Number(process.env.IDLE_TIMEOUT_MS) || 10 * 60 * 1000;
+
+const expiresAt = new Date(Date.now() + idleTimeoutMs);
+
+const session = await prisma.userSession.create({
+  data: {
+    userId: user.id,
+    expiresAt,
+  },
+});
+
+const token = jwt.sign(
+  {
+    userId: user.id,
+    role: user.role,
+    sessionId: session.id,
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "1h" }
+);
 
     return res.status(200).json({
       message: "Login successful",
