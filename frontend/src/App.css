@@ -130,7 +130,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: #526176;
+  color: #465469;
   font-size: 12px;
 }
 
@@ -234,7 +234,7 @@ a {
 
 .sidebar-bottom p {
   margin: 8px 0 0 18px;
-  color: #65748a;
+  color: #596579;
   font-size: 11px;
   font-weight: 400;
 }
@@ -291,7 +291,7 @@ h1 {
 
 .date-label {
   padding-bottom: 5px;
-  color: #65748a;
+  color: #596579;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -342,7 +342,7 @@ h2 {
 }
 
 .muted {
-  color: #65748a;
+  color: #596579;
   font-size: 12px;
 }
 
@@ -387,7 +387,7 @@ h2 {
 
 .card-label {
   margin: 23px 0 8px;
-  color: #526176;
+  color: #465469;
   font-size: 13px;
 }
 
@@ -400,7 +400,7 @@ h2 {
 }
 
 .balance-small {
-  color: #526176;
+  color: #465469;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0;
@@ -409,7 +409,7 @@ h2 {
 .card-foot {
   display: inline-block;
   margin-top: 15px;
-  color: #65748a;
+  color: #596579;
   font-size: 11px;
 }
 
@@ -446,7 +446,7 @@ h2 {
 }
 
 .search-box input::placeholder {
-  color: #65748a;
+  color: #596579;
 }
 
 .table-wrap {
@@ -521,13 +521,13 @@ td.amount-cell.debit {
 .empty-state {
   padding: 30px 12px;
   text-align: center;
-  color: #526176;
+  color: #465469;
   white-space: normal;
 }
 
 .table-footnote {
   margin: 15px 0 0;
-  color: #65748a;
+  color: #596579;
   font-size: 11px;
 }
 
@@ -538,7 +538,7 @@ td.amount-cell.debit {
   gap: 12px;
   padding-top: 26px;
   margin-top: 18px;
-  color: #65748a;
+  color: #596579;
   font-size: 11px;
 }
 
@@ -838,4 +838,47 @@ td.amount-cell.debit {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Accessibility audit: enforce readable colours in high-contrast mode */
+.high-contrast .role-picker > span,
+.high-contrast .nav-label,
+.high-contrast .balance-small,
+.high-contrast .card-top .muted,
+.high-contrast .muted,
+.high-contrast .date-label,
+.high-contrast .section-heading .muted,
+.high-contrast footer,
+.high-contrast footer span {
+  color: #fff;
+}
+
+.high-contrast .summary-card,
+.high-contrast .summary-card *,
+.high-contrast .topbar,
+.high-contrast .topbar *,
+.high-contrast .sidebar,
+.high-contrast .sidebar * {
+  border-color: #fff;
+}
+
+.high-contrast .summary-card .muted,
+.high-contrast .summary-card .balance-small,
+.high-contrast .summary-card .card-foot {
+  color: #fff;
+}
+
+.high-contrast .role-picker select,
+.high-contrast .search-box input {
+  background-color: #000;
+  color: #fff;
+  border-color: #fff;
+}
+
+.high-contrast button:focus-visible,
+.high-contrast a:focus-visible,
+.high-contrast input:focus-visible,
+.high-contrast select:focus-visible {
+  outline: 3px solid #ff0;
+  outline-offset: 3px;
 }
