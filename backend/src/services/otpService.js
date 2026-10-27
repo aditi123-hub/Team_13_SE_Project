@@ -3,8 +3,7 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 
 const otpStore = new Map();
-
-const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const OTP_EXPIRY_MS = 5 * 60 * 1000;
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -16,40 +15,50 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-async function sendOtp(email) {
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER ||
-      !process.env.SMTP_PASS) {
+function getOtpKey(email, purpose) {
+  return `${purpose}:${email.toLowerCase()}`;
+}
+
+async function sendOtp(email, purpose = "LOGIN") {
+  if (
+    !process.env.SMTP_HOST ||
+    !process.env.SMTP_USER ||
+    !process.env.SMTP_PASS
+  ) {
     throw new Error("Email service is not configured");
   }
 
   const otp = crypto.randomInt(100000, 1000000).toString();
+  const isTransfer = purpose === "TRANSFER";
+  const key = getOtpKey(email, purpose);
 
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: email,
-    subject: "Bank Management System - Login OTP",
-    text: `Your login OTP is ${otp}. It expires in 5 minutes.`,
+    subject: `Bank Management System - ${isTransfer ? "Transfer" : "Login"} OTP`,
+    text: `Your ${isTransfer ? "transfer" : "login"} OTP is ${otp}. It expires in 5 minutes.`,
   });
 
-  otpStore.set(email, {
+  otpStore.set(key, {
     hash: crypto.createHash("sha256").update(otp).digest("hex"),
     expiresAt: Date.now() + OTP_EXPIRY_MS,
     attempts: 0,
   });
 }
 
-function verifyOtp(email, submittedOtp) {
-  const record = otpStore.get(email);
+function verifyOtp(email, submittedOtp, purpose = "LOGIN") {
+  const key = getOtpKey(email, purpose);
+  const record = otpStore.get(key);
 
   if (!record || Date.now() > record.expiresAt) {
-    otpStore.delete(email);
+    otpStore.delete(key);
     return false;
   }
 
   record.attempts += 1;
 
   if (record.attempts > 5) {
-    otpStore.delete(email);
+    otpStore.delete(key);
     return false;
   }
 
@@ -64,10 +73,11 @@ function verifyOtp(email, submittedOtp) {
   );
 
   if (valid) {
-    otpStore.delete(email);
+    otpStore.delete(key);
   }
 
   return valid;
 }
 
 module.exports = { sendOtp, verifyOtp };
+

@@ -6,6 +6,7 @@ const tls = require("tls");
 const authRoutes = require("./routes/auth");
 const kycRoutes = require("./routes/kyc");
 const auditLogRoutes = require("./routes/auditLogs");
+const transferRoutes = require("./routes/transfers");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/kyc", kycRoutes);
 app.use("/audit-logs", auditLogRoutes);
+app.use("/transfers", transferRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
