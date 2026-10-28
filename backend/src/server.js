@@ -59,13 +59,20 @@ if (process.env.NODE_ENV === "production" || process.env.ENABLE_HTTPS === "true"
       console.log(`HTTPS Server running securely at https://localhost:${HTTPS_PORT}`);
       console.log(`TLS 1.2+ enforced (BMS-SR-001 compliance)`);
     });
-  } catch (error) {
+	  } catch (error) {
     console.error("Failed to start HTTPS server:", error.message);
+
+    if (process.env.NODE_ENV === "production") {
+      console.error("HTTPS is required in production. Server startup aborted.");
+      process.exit(1);
+    }
+
     console.log("Falling back to HTTP server (development only)");
-    
     app.listen(PORT, () => {
       console.log(`HTTP Server running at http://localhost:${PORT}`);
-      console.warn("WARNING: Running in HTTP mode. HTTPS with TLS 1.2+ required for production.");
+      console.warn(
+        "WARNING: Running in HTTP mode. HTTPS with TLS 1.2+ is required for production."
+      );
     });
   }
 } else {
