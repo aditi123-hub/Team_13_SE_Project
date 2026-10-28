@@ -2,7 +2,7 @@
 const express = require("express");
 const prisma = require("../config/prisma");
 const { requireAdmin } = require("../middleware/authMiddleware");
-
+const { RETENTION_YEARS } = require("../config/auditRetention");
 const router = express.Router();
 
 // Admin-only, read-only, paginated audit log review.
@@ -45,6 +45,9 @@ router.get("/", requireAdmin, async (req, res) => {
         offset,
         hasMore: offset + logs.length < total,
       },
+retentionPolicy: {
+  minimumRetentionYears: RETENTION_YEARS,
+},
     });
   } catch (error) {
     console.error("Failed to retrieve audit logs:", error.message);

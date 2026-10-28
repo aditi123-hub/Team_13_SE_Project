@@ -117,6 +117,13 @@ test("Admin can view audit logs", async () => {
   assert.equal(res.body.pagination.total, 1);
 });
 
+test("Audit logs API reports the five-year minimum retention policy", async () => {
+  const res = await callAuditLogs();
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.retentionPolicy.minimumRetentionYears, 5);
+});
+
 test("Non-admin cannot view audit logs", async () => {
   const res = await callAuditLogs({ tokenRole: "CUSTOMER" });
 
