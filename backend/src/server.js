@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const https = require("https");
+const { shouldAbortOnHttpsFailure } = require("./services/httpsStartupPolicy");
 const fs = require("fs");
 const tls = require("tls");
 const authRoutes = require("./routes/auth");
@@ -62,7 +63,7 @@ if (process.env.NODE_ENV === "production" || process.env.ENABLE_HTTPS === "true"
 	  } catch (error) {
     console.error("Failed to start HTTPS server:", error.message);
 
-    if (process.env.NODE_ENV === "production") {
+    if (shouldAbortOnHttpsFailure(process.env.NODE_ENV)) {
       console.error("HTTPS is required in production. Server startup aborted.");
       process.exit(1);
     }
