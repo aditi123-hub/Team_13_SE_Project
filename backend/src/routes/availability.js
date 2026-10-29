@@ -25,8 +25,20 @@ router.get("/monthly", requireAdmin, async (req, res) => {
       });
     }
 
-    const start = new Date(year, monthNumber - 1, 1);
-    const end = new Date(year, monthNumber, 1);
+    const start = new Date(
+      `${month}-01T00:00:00+05:30`
+    );
+
+    const nextMonthDate = new Date(
+      Date.UTC(year, monthNumber, 1)
+    );
+
+    const nextYear = nextMonthDate.getUTCFullYear();
+    const nextMonth = String(nextMonthDate.getUTCMonth() + 1).padStart(2, "0");
+
+    const end = new Date(
+      `${nextYear}-${nextMonth}-01T00:00:00+05:30`
+    );
 
     const report = await getMonthlyAvailability({ start, end });
 
