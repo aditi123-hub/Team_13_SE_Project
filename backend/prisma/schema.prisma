@@ -117,3 +117,58 @@ model ScheduledMaintenance {
 
   @@index([startAt, endAt])
 }
+
+model Account {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  accountType     AccountType
+  balance         Float         @default(0)
+  dailyTransferred Float        @default(0)
+  lastTransferDate DateTime?
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  sentTransactions     Transaction[] @relation("SentTransactions")
+  receivedTransactions Transaction[] @relation("ReceivedTransactions")
+
+  @@index([userId])
+}
+
+model Transaction {
+  id              Int      @id @default(autoincrement())
+  referenceNumber String   @unique
+  fromAccountId   Int
+  toAccountId     Int
+  amount          Float
+  note            String?
+  createdAt       DateTime @default(now())
+  fromAccount     Account  @relation("SentTransactions", fields: [fromAccountId], references: [id])
+  toAccount       Account  @relation("ReceivedTransactions", fields: [toAccountId], references: [id])
+
+  @@index([fromAccountId])
+  @@index([toAccountId])
+  @@index([createdAt])
+}
+
+model Loan {
+  id              Int        @id @default(autoincrement())
+  referenceNumber String     @unique
+  userId          Int
+  amount          Float
+  purpose         String
+  status          LoanStatus @default(PENDING)
+  remarks         String?
+  reviewedBy      Int?
+  reviewedAt      DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
