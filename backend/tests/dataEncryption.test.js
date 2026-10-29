@@ -4,7 +4,11 @@ const crypto = require("node:crypto");
 
 process.env.DATA_ENCRYPTION_KEY = crypto.randomBytes(32).toString("base64");
 
-const { encryptData, decryptData } = require("../src/services/dataEncryption");
+const {
+  encryptData,
+  decryptData,
+  decryptIfEncrypted,
+} = require("../src/services/dataEncryption");
 
 test("encrypts data and decrypts it to the original value", () => {
   const original = "sensitive-government-id-1234";
@@ -41,4 +45,24 @@ test("rejects unsupported encrypted data formats", () => {
 test("rejects non-string values", () => {
   assert.throws(() => encryptData(123), /must be a string/);
   assert.throws(() => decryptData(null), /must be a string/);
+});
+test("preserves legacy plaintext values", () => {
+  const legacyValue = "legacy-government-id-1234";
+
+  assert.equal(decryptIfEncrypted(legacyValue), legacyValue);
+});
+
+test("decrypts encrypted values through decryptIfEncrypted", () => {
+  const original = "sensitive-government-id-5678";
+  const encrypted = encryptData(original);
+
+  assert.notEqual(encrypted, original);
+  assert.equal(decryptIfEncrypted(encrypted), original);
+});
+
+test("rejects non-string values in decryptIfEncrypted", () => {
+  assert.throws(
+    () => decryptIfEncrypted(null),
+    /must be a string/
+  );
 });
