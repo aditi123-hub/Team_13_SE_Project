@@ -1,10 +1,25 @@
 const prisma = require("../config/prisma");
+const BANKING_TIMEZONE = "Asia/Kolkata";
 const BANKING_START_HOUR = 9;
 const BANKING_END_HOUR = 18;
 const AVAILABILITY_TARGET_PERCENT = 99.5;
 
 function isWithinBankingHours(date) {
-  const minutes = date.getHours() * 60 + date.getMinutes();
+  if (!(date instanceof Date) || !Number.isFinite(date.getTime())) {
+    throw new Error("A valid date is required");
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: BANKING_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+
+  const parts = formatter.formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === "hour").value);
+  const minute = Number(parts.find((part) => part.type === "minute").value);
+  const minutes = hour * 60 + minute;
 
   return (
     minutes >= BANKING_START_HOUR * 60 &&
@@ -36,6 +51,68 @@ function calculateAvailability({ totalEligibleMs, downtimeMs }) {
   };
 }
 
+
+function getISTDateParts(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: BANKING_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts.map(({ type, value }) => [type, value])
+  );
+
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+  };
+}
+
+function getISTOffsetMs(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: BANKING_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts.map(({ type, value }) => [type, value])
+  );
+
+  const displayedAsUTC = Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+    Number(values.hour),
+    Number(values.minute),
+    Number(values.second)
+  );
+
+  return displayedAsUTC - date.getTime();
+}
+
+function getISTBoundary(date, hour) {
+  const { year, month, day } = getISTDateParts(date);
+
+  // Start with the requested wall-clock time interpreted as UTC,
+  // then correct it using the timezone offset for that date.
+  const wallClock = Date.UTC(year, month - 1, day, hour, 0, 0);
+  let boundary = wallClock - getISTOffsetMs(new Date(wallClock));
+
+  // Recheck at the calculated instant to account for timezone offsets.
+  boundary = wallClock - getISTOffsetMs(new Date(boundary));
+
+  return new Date(boundary);
+}
+
 function calculateEligibleTime(start, end, maintenanceWindows = []) {
   if (
     !(start instanceof Date) ||
@@ -63,18 +140,32 @@ function calculateEligibleTime(start, end, maintenanceWindows = []) {
   });
 
   let eligibleMs = 0;
-  const day = new Date(start);
-  day.setHours(0, 0, 0, 0);
 
-  while (day < end) {
-    const opening = new Date(day);
-    opening.setHours(BANKING_START_HOUR, 0, 0, 0);
+  // Walk through each IST calendar day, using actual instants for
+  // its 09:00 and 18:00 boundaries.
+  const firstDay = getISTDateParts(start);
+  let day = new Date(Date.UTC(firstDay.year, firstDay.month - 1, firstDay.day));
 
-    const closing = new Date(day);
-    closing.setHours(BANKING_END_HOUR, 0, 0, 0);
+  while (true) {
+    const dayParts = {
+      year: day.getUTCFullYear(),
+      month: day.getUTCMonth() + 1,
+      day: day.getUTCDate(),
+    };
 
-    const intervalStart = new Date(Math.max(start.getTime(), opening.getTime()));
-    const intervalEnd = new Date(Math.min(end.getTime(), closing.getTime()));
+    const dayMarker = new Date(
+      Date.UTC(dayParts.year, dayParts.month - 1, dayParts.day)
+    );
+
+    const opening = getISTBoundary(dayMarker, BANKING_START_HOUR);
+    const closing = getISTBoundary(dayMarker, BANKING_END_HOUR);
+
+    const intervalStart = new Date(
+      Math.max(start.getTime(), opening.getTime())
+    );
+    const intervalEnd = new Date(
+      Math.min(end.getTime(), closing.getTime())
+    );
 
     if (intervalStart < intervalEnd) {
       let intervals = [{ start: intervalStart, end: intervalEnd }];
@@ -110,16 +201,28 @@ function calculateEligibleTime(start, end, maintenanceWindows = []) {
       }
 
       eligibleMs += intervals.reduce(
-        (total, interval) => total + interval.end.getTime() - interval.start.getTime(),
+        (total, interval) =>
+          total + interval.end.getTime() - interval.start.getTime(),
         0
       );
     }
 
-    day.setDate(day.getDate() + 1);
+    // Stop after the IST calendar date containing the end instant.
+    const endParts = getISTDateParts(end);
+    if (
+      dayParts.year === endParts.year &&
+      dayParts.month === endParts.month &&
+      dayParts.day === endParts.day
+    ) {
+      break;
+    }
+
+    day.setUTCDate(day.getUTCDate() + 1);
   }
 
   return eligibleMs;
 }
+
 
 function calculateMonthlyAvailability({
   start,
@@ -286,5 +389,5 @@ module.exports = {
   calculateEligibleTime,
   calculateMonthlyAvailability,
   recordHealthCheck,
-getMonthlyAvailability,
+  getMonthlyAvailability,
 };
