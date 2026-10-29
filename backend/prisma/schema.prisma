@@ -86,3 +86,34 @@ model UserSession {
   @@index([userId])
   @@index([expiresAt])
 }
+model AvailabilityCheck {
+  id             Int      @id @default(autoincrement())
+  checkedAt      DateTime @default(now())
+  isHealthy      Boolean
+  responseTimeMs Int?
+  statusCode     Int?
+
+  @@index([checkedAt])
+  @@index([isHealthy, checkedAt])
+}
+
+model AvailabilityIncident {
+  id          Int       @id @default(autoincrement())
+  startedAt   DateTime  @default(now())
+  recoveredAt DateTime?
+  reason      String?
+  createdAt   DateTime  @default(now())
+
+  @@index([startedAt])
+  @@index([recoveredAt])
+}
+
+model ScheduledMaintenance {
+  id          Int      @id @default(autoincrement())
+  startAt     DateTime
+  endAt       DateTime
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([startAt, endAt])
+}

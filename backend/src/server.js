@@ -7,6 +7,8 @@ const authRoutes = require("./routes/auth");
 const kycRoutes = require("./routes/kyc");
 const auditLogRoutes = require("./routes/auditLogs");
 const transferRoutes = require("./routes/transfers");
+const availabilityRoutes = require("./routes/availability");
+const { recordHealthCheck } = require("./services/availabilityService");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
@@ -15,17 +17,49 @@ const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 app.use(express.json());
 // Routes
 app.use("/auth", authRoutes);
+app.use("/api/availability", availabilityRoutes);
 app.use("/kyc", kycRoutes);
 app.use("/audit-logs", auditLogRoutes);
 app.use("/transfers", transferRoutes);
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    message: "Bank Management System backend is running",
-    secure: req.secure,
-    protocol: req.protocol,
-  });
+app.get("/api/health", async (req, res) => {
+  const startedAt = Date.now();
+
+  try {
+    // Confirm the database is reachable as part of the health check.
+    await require("./config/prisma").$queryRaw`SELECT 1`;
+
+    const responseTimeMs = Date.now() - startedAt;
+
+    await recordHealthCheck({
+      isHealthy: true,
+      responseTimeMs,
+      statusCode: 200,
+    });
+
+    return res.status(200).json({
+      status: "ok",
+      message: "Bank Management System backend is running",
+      secure: req.secure,
+      protocol: req.protocol,
+    });
+  } catch (error) {
+    try {
+      await recordHealthCheck({
+        isHealthy: false,
+        responseTimeMs: Date.now() - startedAt,
+        statusCode: 503,
+        reason: "Health check failed",
+      });
+    } catch (recordError) {
+      console.error("Failed to record health check:", recordError.message);
+    }
+
+    return res.status(503).json({
+      status: "error",
+      message: "Bank Management System health check failed",
+    });
+  }
 });
 
 app.use((req, res) => {
