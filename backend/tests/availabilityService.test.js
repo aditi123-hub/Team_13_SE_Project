@@ -14,6 +14,19 @@ test("Banking hours include 09:00 and exclude 18:00", () => {
   assert.equal(isWithinBankingHours(new Date(2026, 9, 29, 18, 0)), false);
   assert.equal(isWithinBankingHours(new Date(2026, 9, 29, 8, 59)), false);
 });
+test("Banking hours are evaluated in IST regardless of server timezone", () => {
+  // 03:30 UTC is 09:00 IST — banking hours should include it.
+  assert.equal(
+    isWithinBankingHours(new Date("2026-10-29T03:30:00.000Z")),
+    true
+  );
+
+  // 12:30 UTC is 18:00 IST — banking hours should exclude it.
+  assert.equal(
+    isWithinBankingHours(new Date("2026-10-29T12:30:00.000Z")),
+    false
+  );
+});
 
 test("Availability meets the 99.5% target when downtime is 0.5%", () => {
   const result = calculateAvailability({
@@ -70,7 +83,15 @@ test("Eligible time excludes hours outside banking hours", () => {
 
   assert.equal(eligible, 9 * 60 * 60 * 1000);
 });
+test("Eligible time uses IST banking-hour boundaries", () => {
+  const start = new Date("2026-10-29T00:00:00.000Z");
+  const end = new Date("2026-10-30T00:00:00.000Z");
 
+  const eligibleMs = calculateEligibleTime(start, end);
+
+  // 09:00–18:00 IST is 9 hours per day.
+  assert.equal(eligibleMs, 9 * 60 * 60 * 1000);
+});
 test("Scheduled maintenance is excluded from eligible time", () => {
   const eligible = calculateEligibleTime(
     new Date(2026, 9, 29, 9, 0),
