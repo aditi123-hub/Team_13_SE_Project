@@ -8,6 +8,9 @@ const kycRoutes = require("./routes/kyc");
 const auditLogRoutes = require("./routes/auditLogs");
 const transferRoutes = require("./routes/transfers");
 const availabilityRoutes = require("./routes/availability");
+const loanRoutes = require("./routes/loans");
+const statementRoutes = require("./routes/statements");
+const adminRoutes = require("./routes/admin");
 const { recordHealthCheck } = require("./services/availabilityService");
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +24,9 @@ app.use("/api/availability", availabilityRoutes);
 app.use("/kyc", kycRoutes);
 app.use("/audit-logs", auditLogRoutes);
 app.use("/transfers", transferRoutes);
+app.use("/loans", loanRoutes);
+app.use("/statements", statementRoutes);
+app.use("/admin", adminRoutes);
 
 app.get("/api/health", async (req, res) => {
   const startedAt = Date.now();
