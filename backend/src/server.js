@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const https = require("https");
+const { shouldAbortOnHttpsFailure } = require("./services/httpsStartupPolicy");
 const fs = require("fs");
 const tls = require("tls");
 const authRoutes = require("./routes/auth");
@@ -59,13 +60,20 @@ if (process.env.NODE_ENV === "production" || process.env.ENABLE_HTTPS === "true"
       console.log(`HTTPS Server running securely at https://localhost:${HTTPS_PORT}`);
       console.log(`TLS 1.2+ enforced (BMS-SR-001 compliance)`);
     });
-  } catch (error) {
+	  } catch (error) {
     console.error("Failed to start HTTPS server:", error.message);
+
+    if (shouldAbortOnHttpsFailure(process.env.NODE_ENV)) {
+      console.error("HTTPS is required in production. Server startup aborted.");
+      process.exit(1);
+    }
+
     console.log("Falling back to HTTP server (development only)");
-    
     app.listen(PORT, () => {
       console.log(`HTTP Server running at http://localhost:${PORT}`);
-      console.warn("WARNING: Running in HTTP mode. HTTPS with TLS 1.2+ required for production.");
+      console.warn(
+        "WARNING: Running in HTTP mode. HTTPS with TLS 1.2+ is required for production."
+      );
     });
   }
 } else {
