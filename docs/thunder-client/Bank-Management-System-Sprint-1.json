@@ -1,0 +1,355 @@
+{
+    "clientName": "Thunder Client",
+    "collectionName": "Bank Management System - Sprint 1",
+    "collectionId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+    "dateExported": "2026-11-01T20:54:25.365Z",
+    "version": "1.4",
+    "folders": [],
+    "requests": [
+        {
+            "_id": "464bbcba-bebf-4392-be14-8cff85724e78",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "01 - Customer Registration",
+            "url": "https://localhost:3443/auth/register",
+            "method": "POST",
+            "sortNum": 20000,
+            "created": "2026-11-01T20:16:59.778Z",
+            "modified": "2026-11-01T20:16:59.778Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"fullName\": \"Demo Customer 2\",",
+                    "  \"email\": \"demo.customer2@example.com\",",
+                    "  \"mobile\": \"9876543213\",",
+                    "  \"governmentIdNum\": \"DEMO123457\",",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "f8bb1a14-6f62-40a1-9658-44b2515681f6",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "02 - Duplicate Registration",
+            "url": "https://localhost:3443/auth/register",
+            "method": "POST",
+            "sortNum": 30000,
+            "created": "2026-11-01T20:23:37.880Z",
+            "modified": "2026-11-01T20:23:37.880Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"fullName\": \"Demo Customer 2\",",
+                    "  \"email\": \"demo.customer2@example.com\",",
+                    "  \"mobile\": \"9876543213\",",
+                    "  \"governmentIdNum\": \"DEMO123457\",",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "b58b319d-9df2-4d76-825b-8dd0f3804859",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "03 - Customer Login",
+            "url": "https://localhost:3443/auth/login",
+            "method": "POST",
+            "sortNum": 50000,
+            "created": "2026-11-01T20:25:16.673Z",
+            "modified": "2026-11-01T20:25:16.673Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"email\": \"demo.customer2@example.com\",",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "60d10b18-f939-4670-9104-717b2ab37c50",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "04 - OTP Verification.",
+            "url": "https://localhost:3443/auth/verify-otp",
+            "method": "POST",
+            "sortNum": 60000,
+            "created": "2026-11-01T20:26:36.932Z",
+            "modified": "2026-11-01T20:26:36.932Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"email\": \"demo.customer2@example.com\",",
+                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "88e1be90-aade-4feb-812f-86b885d4f09c",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "05 \u2013 Account Lockout",
+            "url": "https://localhost:3443/auth/login",
+            "method": "POST",
+            "sortNum": 70000,
+            "created": "2026-11-01T20:27:50.497Z",
+            "modified": "2026-11-01T20:27:50.497Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"email\": \"lockout.test@example.com\",",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "866169fc-cd04-4cbc-9896-528e71af54b2",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "06 - RBAC - Customer Access Denied",
+            "url": "https://localhost:3443/kyc/pending",
+            "method": "GET",
+            "sortNum": 80000,
+            "created": "2026-11-01T20:29:24.741Z",
+            "modified": "2026-11-01T20:29:24.741Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": ""
+            }
+        },
+        {
+            "_id": "9bb49a1a-6ea8-4c3a-8a30-7cdc99a66979",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "07 - Admin Login",
+            "url": "https://localhost:3443/auth/login",
+            "method": "POST",
+            "sortNum": 90000,
+            "created": "2026-11-01T20:31:29.619Z",
+            "modified": "2026-11-01T20:31:29.619Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"email\": \"YOUR_ADMIN_EMAIL\",",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "469fd61b-8142-482a-8f25-3354094870fb",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "08 - Admin OTP Verification",
+            "url": "https://localhost:3443/auth/verify-otp",
+            "method": "POST",
+            "sortNum": 100000,
+            "created": "2026-11-01T20:33:56.680Z",
+            "modified": "2026-11-01T20:33:56.680Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"email\": \"YOUR_ADMIN_EMAIL\",",
+                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "118f7924-40f8-4bec-8c1a-46530ebafb60",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "09 - RBAC - Admin Access",
+            "url": "https://localhost:3443/audit-logs",
+            "method": "GET",
+            "sortNum": 110000,
+            "created": "2026-11-01T20:35:18.251Z",
+            "modified": "2026-11-01T20:35:18.251Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": ""
+            }
+        },
+        {
+            "_id": "11d0cdaa-7d2a-4153-9b00-ac42b01251e6",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "10 - KYC Application",
+            "url": "https://localhost:3443/kyc/apply",
+            "method": "POST",
+            "sortNum": 120000,
+            "created": "2026-11-01T20:36:57.416Z",
+            "modified": "2026-11-01T20:36:57.416Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"accountType\": \"SAVINGS\",",
+                    "  \"documents\": [",
+                    "    {",
+                    "      \"documentType\": \"IDENTITY_PROOF\",",
+                    "      \"documentValue\": \"DEMO-ID-12345\"",
+                    "    },",
+                    "    {",
+                    "      \"documentType\": \"ADDRESS_PROOF\",",
+                    "      \"documentValue\": \"DEMO-ADDRESS-12345\"",
+                    "    }",
+                    "  ]",
+                    "}"
+                ],
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": ""
+            }
+        },
+        {
+            "_id": "d923cf30-5276-4965-8f35-bb971a1f4312",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "11 - KYC Status Check",
+            "url": "https://localhost:3443/kyc/status/KYC-CF44BA62",
+            "method": "GET",
+            "sortNum": 130000,
+            "created": "2026-11-01T20:38:10.304Z",
+            "modified": "2026-11-01T20:38:10.304Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": ""
+            }
+        },
+        {
+            "_id": "20bca9dd-f426-4efb-a952-57b134a63ee1",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "12 - Manager Login",
+            "url": "https://localhost:3443/auth/login",
+            "method": "POST",
+            "sortNum": 150000,
+            "created": "2026-11-01T20:44:48.665Z",
+            "modified": "2026-11-01T20:44:48.665Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"email\": \"photosaditi123@gmail.com\",",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "75876dfe-012e-4bc8-9e60-a097d6d965c2",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "13 - Manager OTP Verification",
+            "url": "https://localhost:3443/auth/verify-otp",
+            "method": "POST",
+            "sortNum": 160000,
+            "created": "2026-11-01T20:46:33.332Z",
+            "modified": "2026-11-01T20:46:33.333Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"email\": \"photosaditi123@gmail.com\",",
+                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "6d0c0e06-654e-4356-9690-534970f4e7a9",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "14 - Manager - Pending KYC",
+            "url": "https://localhost:3443/kyc/pending",
+            "method": "GET",
+            "sortNum": 170000,
+            "created": "2026-11-01T20:48:20.843Z",
+            "modified": "2026-11-01T20:48:20.843Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": ""
+            }
+        },
+        {
+            "_id": "4849be19-bf93-4147-9029-174d0bc7f8df",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "15 - Manager - Approve KYC",
+            "url": "https://localhost:3443/kyc/decision/2",
+            "method": "POST",
+            "sortNum": 180000,
+            "created": "2026-11-01T20:49:20.604Z",
+            "modified": "2026-11-01T20:49:20.604Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{",
+                    "  \"decision\": \"APPROVED\"",
+                    "}"
+                ],
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": ""
+            }
+        },
+        {
+            "_id": "b0d6edbb-949b-496e-84ba-6a2982a661d8",
+            "colId": "9c05d097-17eb-4d93-b906-5be93d68240c",
+            "containerId": "",
+            "name": "16 - Admin - Audit Logs",
+            "url": "https://localhost:3443/audit-logs",
+            "method": "GET",
+            "sortNum": 190000,
+            "created": "2026-11-01T20:50:54.162Z",
+            "modified": "2026-11-01T20:50:54.162Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": ""
+            }
+        }
+    ],
+    "ref": "KQXYcCni-khfKEGA1QODatKzig6C1HNARl8r9cxBm5z6nERx3HxEGBP0vhqi-KHIB5qXmvMqYv2AHOj_U8zxxA"
+}
