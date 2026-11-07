@@ -2,9 +2,23 @@
 const express = require("express");
 const prisma = require("../config/prisma");
 const { requireAdmin } = require("../middleware/authMiddleware");
+const { verifyAuditChain } = require("../services/auditLogger");
 
 const router = express.Router();
+// Admin-only audit chain integrity verification.
+router.get("/verify", requireAdmin, async (req, res) => {
+  try {
+    const result = await verifyAuditChain();
 
+    return res.status(result.valid ? 200 : 409).json(result);
+  } catch (error) {
+    console.error("Audit chain verification failed:", error.message);
+
+    return res.status(500).json({
+      error: "Unable to verify audit log chain",
+    });
+  }
+});
 // Admin-only, read-only, paginated audit log review.
 router.get("/", requireAdmin, async (req, res) => {
   try {

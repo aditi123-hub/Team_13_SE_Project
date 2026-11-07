@@ -159,10 +159,16 @@ router.post("/login", async (req, res) => {
 
     // Reject login while the account is locked.
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      return res.status(423).json({
-        error: "Account locked after 5 failed login attempts. Try again after the cooldown period.",
+      await auditLogger.recordAuditLog({
+        userId: user.id,
+        event: "LOGIN_ATTEMPT",
+        outcome: "ACCOUNT_LOCKED",
       });
-    }
+
+  return res.status(423).json({
+    error: "Account locked after 5 failed login attempts. Try again after the cooldown period.",
+  });
+}
 
     // Clear an expired lockout.
     if (user.lockedUntil && user.lockedUntil <= new Date()) {
