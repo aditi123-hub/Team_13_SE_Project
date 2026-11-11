@@ -84,7 +84,7 @@ const inMemoryStore = {
       applicationId: 1,
       accountType: "SAVINGS",
       balance: 50000.0,
-      status: "PENDING",
+      status: "ACTIVE",
       createdAt: new Date(),
       updatedAt: new Date(),
     },
