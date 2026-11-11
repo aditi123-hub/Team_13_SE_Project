@@ -9,6 +9,9 @@ const kycRoutes = require("./routes/kyc");
 const auditLogRoutes = require("./routes/auditLogs");
 const transferRoutes = require("./routes/transfers");
 const availabilityRoutes = require("./routes/availability");
+const loanRoutes = require("./routes/loans");
+const statementRoutes = require("./routes/statements");
+const adminRoutes = require("./routes/admin");
 const reportRoutes = require("./routes/reports");
 const accountRoutes = require("./routes/accounts");
 const { recordHealthCheck } = require("./services/availabilityService");
@@ -24,6 +27,10 @@ app.use("/api/availability", availabilityRoutes);
 app.use("/kyc", kycRoutes);
 app.use("/audit-logs", auditLogRoutes);
 app.use("/transfers", transferRoutes);
+app.use("/loans", loanRoutes);
+app.use("/statements", statementRoutes);
+app.use("/admin", adminRoutes);
+
 app.use("/api/reports", reportRoutes);
 app.use("/accounts", accountRoutes);
 app.get("/api/health", async (req, res) => {
