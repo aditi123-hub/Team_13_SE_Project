@@ -7,6 +7,71 @@ process.env.JWT_SECRET = "test-secret";
 
 const prisma = require("../src/config/prisma");
 const auditLogRoutes = require("../src/routes/auditLogs");
+async function callVerifyAuditChain({
+  tokenRole = "ADMIN",
+  noToken = false,
+  logs = [],
+} = {}) {
+  const sessionId = "test-audit-session";
+
+  const req = {
+    headers: noToken
+      ? {}
+      : {
+          authorization: `Bearer ${jwt.sign(
+            { userId: 100, role: tokenRole, sessionId },
+            process.env.JWT_SECRET
+          )}`,
+        },
+  };
+
+  const res = createResponse();
+
+  const originalSessionUpdateMany = prisma.userSession.updateMany;
+  const originalUserFindUnique = prisma.user.findUnique;
+  const originalTransaction = prisma.$transaction;
+
+  prisma.userSession.updateMany = async () => ({ count: 1 });
+
+  prisma.user.findUnique = async () => ({
+    id: 100,
+    role: tokenRole,
+  });
+
+  prisma.$transaction = async (callback) =>
+    callback({
+      $queryRaw: async () => [{ locked: 1 }],
+      auditLog: {
+        findMany: async () => logs,
+      },
+    });
+
+  try {
+    const handler = auditLogRoutes.stack.find(
+      (layer) =>
+        layer.route?.path === "/verify" &&
+        layer.route.methods.get
+    );
+
+    assert.ok(handler, "Audit verification route should exist");
+
+    for (const layer of handler.route.stack) {
+      let nextCalled = false;
+
+      await layer.handle(req, res, () => {
+        nextCalled = true;
+      });
+
+      if (!nextCalled) break;
+    }
+
+    return res;
+  } finally {
+    prisma.userSession.updateMany = originalSessionUpdateMany;
+    prisma.user.findUnique = originalUserFindUnique;
+    prisma.$transaction = originalTransaction;
+  }
+}
 
 function createResponse() {
   return {
@@ -117,6 +182,13 @@ test("Admin can view audit logs", async () => {
   assert.equal(res.body.pagination.total, 1);
 });
 
+test("Audit logs API reports the five-year minimum retention policy", async () => {
+  const res = await callAuditLogs();
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.retentionPolicy.minimumRetentionYears, 5);
+});
+
 test("Non-admin cannot view audit logs", async () => {
   const res = await callAuditLogs({ tokenRole: "CUSTOMER" });
 
@@ -137,4 +209,57 @@ test("Pagination parameters are accepted", async () => {
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.pagination.limit, 10);
   assert.equal(res.body.pagination.offset, 5);
+});
+test("Audit verification GET route exists", () => {
+  const handler = auditLogRoutes.stack.find(
+    (layer) =>
+      layer.route?.path === "/verify" &&
+      layer.route.methods.get
+  );
+
+  assert.ok(handler);
+});
+
+test("Admin can verify audit logs", async () => {
+  const res = await callVerifyAuditChain();
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.valid, true);
+  assert.equal(res.body.checkedRecords, 0);
+});
+
+test("Non-admin cannot verify audit logs", async () => {
+  const res = await callVerifyAuditChain({
+    tokenRole: "CUSTOMER",
+  });
+
+  assert.equal(res.statusCode, 403);
+});
+
+test("Unauthenticated user cannot verify audit logs", async () => {
+  const res = await callVerifyAuditChain({
+    noToken: true,
+  });
+
+  assert.equal(res.statusCode, 401);
+});
+test("Tampered audit record is detected", async () => {
+  const originalLog = {
+    id: 1,
+    userId: 100,
+    event: "LOGIN_ATTEMPT",
+    outcome: "SUCCESS",
+    timestamp: new Date("2026-10-26T08:00:00Z"),
+    previousHash: "GENESIS",
+    recordHash: "incorrect-hash",
+  };
+
+  const res = await callVerifyAuditChain({
+    logs: [originalLog],
+  });
+
+  assert.equal(res.statusCode, 409);
+  assert.equal(res.body.valid, false);
+  assert.equal(res.body.invalidRecordId, 1);
+  assert.equal(res.body.reason, "Record hash mismatch");
 });

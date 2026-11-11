@@ -7,6 +7,7 @@ const {
 const prisma = require("../config/prisma");
 const { randomUUID } = require("crypto");
 const { recordAuditLog } = require("../services/auditLogger");
+const { encryptData, decryptIfEncrypted } = require("../services/dataEncryption");
 const router = express.Router();
 
 // BMS-F-005: Account Opening with KYC
@@ -66,7 +67,7 @@ router.post("/apply", requireCustomer, async (req, res) => {
         documents: {
           create: documents.map((doc) => ({
             documentType: doc.documentType.trim(),
-            documentValue: doc.documentValue.trim(),
+	    documentValue: encryptData(doc.documentValue.trim()),
           })),
         },
       },
@@ -165,7 +166,15 @@ router.get("/pending", requireManager, async (req, res) => {
       orderBy: { createdAt: "asc" },
     });
 
-    return res.status(200).json({ applications });
+    const decryptedApplications = applications.map((application) => ({
+  ...application,
+  documents: application.documents.map((document) => ({
+    ...document,
+    documentValue: decryptIfEncrypted(document.documentValue),
+  })),
+}));
+
+return res.status(200).json({ applications: decryptedApplications });
   } catch (error) {
     console.error("Fetch pending KYC error:", error.message);
 
@@ -199,7 +208,15 @@ router.get("/review/:id", requireManager, async (req, res) => {
       });
     }
 
-    return res.status(200).json(application);
+    const decryptedApplication = {
+  ...application,
+  documents: application.documents.map((document) => ({
+    ...document,
+documentValue: decryptIfEncrypted(document.documentValue),
+  })),
+};
+
+return res.status(200).json(decryptedApplication);
   } catch (error) {
     console.error("KYC review fetch error:", error.message);
 
