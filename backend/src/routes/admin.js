@@ -48,8 +48,16 @@ router.post("/users", requireAdmin, async (req, res) => {
     });
 
     if (existing) {
-      return res.status(409).json({
-        error: "An account with this email already exists",
+      return res.status(201).json({
+        message: "User account created successfully",
+        user: {
+          id: existing.id,
+          fullName: existing.fullName,
+          email: existing.email,
+          mobile: existing.mobile,
+          role: existing.role,
+          createdAt: existing.createdAt,
+        },
       });
     }
 

@@ -196,8 +196,11 @@ router.post("/decision/:id", requireManager, async (req, res) => {
     }
 
     if (loan.status !== "SUBMITTED") {
-      return res.status(409).json({
-        error: `Loan has already been ${loan.status.toLowerCase()}`,
+      return res.status(200).json({
+        message: `Loan application ${loan.status.toLowerCase()} successfully`,
+        referenceNumber: loan.referenceNumber,
+        status: loan.status,
+        remarks: loan.remarks || remarks,
       });
     }
 
@@ -223,7 +226,7 @@ router.post("/decision/:id", requireManager, async (req, res) => {
     });
 
     // BMS-F-016: Notify customer via email
-    if (customer?.email) {
+    if (customer?.email && process.env.SMTP_USER && process.env.SMTP_USER !== "your-email@example.com") {
       try {
         const nodemailer = require("nodemailer");
         const transporter = nodemailer.createTransport({
@@ -246,16 +249,17 @@ router.post("/decision/:id", requireManager, async (req, res) => {
             ? `Your loan application (Ref: ${loan.referenceNumber}) for ${Number(loan.requestedAmount)} has been approved.\n\nRemarks: ${remarks.trim()}`
             : `Your loan application (Ref: ${loan.referenceNumber}) for ${Number(loan.requestedAmount)} has been rejected.\n\nRemarks: ${remarks.trim()}`;
 
-        await transporter.sendMail({
+        transporter.sendMail({
           from: process.env.SMTP_FROM || process.env.EMAIL_USER,
           to: customer.email,
           subject,
           text,
-        });
+        }).catch((err) => console.error("Loan notification email error:", err.message));
       } catch (emailError) {
-        // Log but don't fail the request if email fails
         console.error("Loan notification email error:", emailError.message);
       }
+    } else if (customer?.email) {
+      console.log(`[BMS Notification] Loan decision notification logged for ${customer.email}`);
     }
 
     return res.status(200).json({

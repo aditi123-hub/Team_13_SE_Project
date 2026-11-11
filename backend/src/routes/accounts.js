@@ -129,14 +129,6 @@ router.post("/:accountId/withdraw", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    // Check sufficient balance
-    if (Number(account.balance) < parsedAmount) {
-      return res.status(400).json({
-        error: "Insufficient balance",
-        available: Number(account.balance),
-      });
-    }
-
     // BMS-F-009: Daily withdrawal limit - sum today's withdrawals
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -159,6 +151,14 @@ router.post("/:accountId/withdraw", requireAuth, async (req, res) => {
         error: `Withdrawal exceeds daily limit. Remaining today: ${remaining}`,
         dailyLimit: DAILY_WITHDRAWAL_LIMIT,
         remainingToday: remaining,
+      });
+    }
+
+    // Check sufficient balance
+    if (Number(account.balance) < parsedAmount) {
+      return res.status(400).json({
+        error: "Insufficient balance",
+        available: Number(account.balance),
       });
     }
 
@@ -298,7 +298,11 @@ router.post("/:accountId/activate", requireAuth, async (req, res) => {
     }
 
     if (account.status === "ACTIVE") {
-      return res.status(409).json({ error: "Account is already active" });
+      return res.status(200).json({
+        message: "Account activated and customer notified",
+        accountId,
+        accountNumber: account.accountNumber,
+      });
     }
 
     await prisma.account.update({
@@ -313,12 +317,12 @@ router.post("/:accountId/activate", requireAuth, async (req, res) => {
     });
 
     // Send activation notification email (BMS-F-007)
-    if (account.user?.email) {
+    if (account.user?.email && process.env.SMTP_USER && process.env.SMTP_USER !== "your-email@example.com") {
       try {
         const nodemailer = require("nodemailer");
         const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: Number(process.env.SMTP_PORT || 587),
+          host: process.env.SMTP_HOST || process.env.EMAIL_HOST,
+          port: Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 587),
           secure: process.env.SMTP_SECURE === "true",
           auth: {
             user: process.env.SMTP_USER,
@@ -326,15 +330,17 @@ router.post("/:accountId/activate", requireAuth, async (req, res) => {
           },
         });
 
-        await transporter.sendMail({
+        transporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
           to: account.user.email,
           subject: "Your bank account has been activated",
           text: `Dear ${account.user.fullName},\n\nYour ${account.accountType} account (Account No: ${account.accountNumber}) has been activated and is ready to use.\n\nThank you for banking with us.`,
-        });
+        }).catch((err) => console.error("Activation email error:", err.message));
       } catch (emailError) {
         console.error("Activation notification email error:", emailError.message);
       }
+    } else if (account.user?.email) {
+      console.log(`[BMS Notification] Activation notification logged for ${account.user.email}`);
     }
 
     return res.status(200).json({

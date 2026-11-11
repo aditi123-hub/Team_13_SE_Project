@@ -1,5 +1,6 @@
 require("tsx/cjs");
 require("dotenv").config();
+const crypto = require("crypto");
 
 const { PrismaPg } = require("@prisma/adapter-pg");
 const { PrismaClient } = require("../../generated/prisma/client.ts");
@@ -127,17 +128,29 @@ const inMemoryStore = {
       updatedAt: new Date(),
     },
   ],
-  auditLogs: [
-    {
+  auditLogs: (() => {
+    const ts = new Date("2026-11-01T00:00:00.000Z");
+    const recordPayload = JSON.stringify({
       id: 1,
       userId: 1,
       event: "SYSTEM_INITIALIZED",
       outcome: "SUCCESS",
-      timestamp: new Date(),
+      timestamp: ts.toISOString(),
       previousHash: "GENESIS",
-      recordHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    },
-  ],
+    });
+    const hash = crypto.createHash("sha256").update(recordPayload).digest("hex");
+    return [
+      {
+        id: 1,
+        userId: 1,
+        event: "SYSTEM_INITIALIZED",
+        outcome: "SUCCESS",
+        timestamp: ts,
+        previousHash: "GENESIS",
+        recordHash: hash,
+      },
+    ];
+  })(),
   kycApplications: [
     {
       id: 1,
@@ -183,8 +196,13 @@ function createMockModel(collectionName) {
       }
       return item ? { ...item } : null;
     },
-    async findFirst({ where = {}, include = {} }) {
-      const items = inMemoryStore[collectionName] || [];
+    async findFirst({ where = {}, include = {}, orderBy } = {}) {
+      let items = [...(inMemoryStore[collectionName] || [])];
+      if (orderBy && orderBy.id === "desc") {
+        items.sort((a, b) => (b.id || 0) - (a.id || 0));
+      } else if (orderBy && orderBy.id === "asc") {
+        items.sort((a, b) => (a.id || 0) - (b.id || 0));
+      }
       const item = items.find((i) => matchClause(i, where)) || null;
       if (item && include.user && item.userId) {
         const user = inMemoryStore.users.find((u) => u.id === item.userId);
@@ -195,6 +213,11 @@ function createMockModel(collectionName) {
     async findMany({ where = {}, take, skip = 0, orderBy } = {}) {
       let items = [...(inMemoryStore[collectionName] || [])];
       items = items.filter((item) => matchClause(item, where));
+      if (orderBy && orderBy.id === "desc") {
+        items.sort((a, b) => (b.id || 0) - (a.id || 0));
+      } else if (orderBy && orderBy.id === "asc") {
+        items.sort((a, b) => (a.id || 0) - (b.id || 0));
+      }
       if (skip) items = items.slice(skip);
       if (take) items = items.slice(0, take);
       return items;

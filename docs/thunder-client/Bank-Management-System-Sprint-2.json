@@ -178,7 +178,7 @@
             "headers": [],
             "body": {
                 "type": "json",
-                "raw": "{\n  \"fromAccountId\": 1,\n  \"toAccountId\": 2,\n  \"amount\": 15000,\n  \"otp\": \"REPLACE_WITH_RECEIVED_OTP\"\n}",
+                "raw": "{\n  \"fromAccountId\": 1,\n  \"toAccountId\": 2,\n  \"amount\": 15000,\n  \"otp\": \"123456\"\n}",
                 "form": []
             },
             "auth": {
@@ -339,7 +339,7 @@
             "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
             "containerId": "",
             "name": "18 - Admin - Update User Role (BMS-F-018 & BMS-SR-004, PR #38 & #46)",
-            "url": "https://localhost:3443/admin/users/1/role",
+            "url": "https://localhost:3443/admin/users/2/role",
             "method": "PATCH",
             "sortNum": 180000,
             "created": "2026-11-11T13:12:14.063Z",

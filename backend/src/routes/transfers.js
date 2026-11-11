@@ -83,13 +83,6 @@ router.post("/initiate", requireAuth, async (req, res) => {
       });
     }
 
-    // Check sufficient balance
-    if (Number(fromAccount.balance) < parsedAmount) {
-      return res.status(400).json({
-        error: "Insufficient balance",
-      });
-    }
-
     // BMS-F-013: Daily limit enforcement
     const available = await getAvailableDailyLimit(fromAccount.id);
 
@@ -98,6 +91,13 @@ router.post("/initiate", requireAuth, async (req, res) => {
         error: `Transfer exceeds daily limit. Available: ${available}`,
         availableLimit: available,
         dailyLimit: DAILY_TRANSFER_LIMIT,
+      });
+    }
+
+    // Check sufficient balance
+    if (Number(fromAccount.balance) < parsedAmount) {
+      return res.status(400).json({
+        error: "Insufficient balance",
       });
     }
 
