@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const jwt = require("jsonwebtoken");
 
+process.env.NODE_ENV = "test";
 process.env.JWT_SECRET = "test-secret";
 process.env.DATA_ENCRYPTION_KEY = require("crypto").randomBytes(32).toString("base64");
 

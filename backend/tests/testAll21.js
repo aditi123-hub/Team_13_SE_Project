@@ -43,9 +43,7 @@ setTimeout(async () => {
       r.end();
     });
 
-    const isExpected =
-      (res.status >= 200 && res.status < 300) ||
-      ((reqData.name.includes("Rejection") || reqData.name.includes("Enforcement")) && res.status === 400);
+    const isExpected = res.status === 200 || res.status === 201;
 
     const padName = reqData.name.slice(0, 48).padEnd(48);
     console.log(`[${String(i + 1).padStart(2, "0")}] ${padName} -> Status: ${res.status} | OK: ${isExpected}`);
@@ -59,3 +57,4 @@ setTimeout(async () => {
   serverProcess.kill();
   process.exit(failed > 0 ? 1 : 0);
 }, 2500);
+
