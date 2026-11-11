@@ -83,7 +83,7 @@ const inMemoryStore = {
       applicationId: 1,
       accountType: "SAVINGS",
       balance: 50000.0,
-      status: "ACTIVE",
+      status: "PENDING",
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -174,13 +174,23 @@ function matchClause(item, where = {}) {
 
 function createMockModel(collectionName) {
   return {
-    async findUnique({ where = {} }) {
+    async findUnique({ where = {}, include = {} }) {
       const items = inMemoryStore[collectionName] || [];
-      return items.find((item) => matchClause(item, where)) || null;
+      const item = items.find((i) => matchClause(i, where)) || null;
+      if (item && include.user && item.userId) {
+        const user = inMemoryStore.users.find((u) => u.id === item.userId);
+        return { ...item, user };
+      }
+      return item ? { ...item } : null;
     },
-    async findFirst({ where = {} }) {
+    async findFirst({ where = {}, include = {} }) {
       const items = inMemoryStore[collectionName] || [];
-      return items.find((item) => matchClause(item, where)) || null;
+      const item = items.find((i) => matchClause(i, where)) || null;
+      if (item && include.user && item.userId) {
+        const user = inMemoryStore.users.find((u) => u.id === item.userId);
+        return { ...item, user };
+      }
+      return item ? { ...item } : null;
     },
     async findMany({ where = {}, take, skip = 0, orderBy } = {}) {
       let items = [...(inMemoryStore[collectionName] || [])];
