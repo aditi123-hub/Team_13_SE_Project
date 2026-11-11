@@ -66,8 +66,10 @@ Follow this numbered sequence to screen record the working demo for Sprint 2:
 
 ---
 
-## Authentication Instructions for Screen Recording
-1. Obtain tokens using the Sprint 1 collection (`Customer Login` + `OTP Verification` and `Manager Login` + `OTP Verification`).
-2. Paste the customer's JWT in the **Auth -> Bearer Token** field of requests `02-12` and `15-16`.
-3. Paste the manager's JWT in **Auth -> Bearer Token** for requests `01`, `13-14`, and `20`.
-4. Paste the admin's JWT in **Auth -> Bearer Token** for requests `17-19` and `21`.
+## Authentication & Tokens
+All 21 requests in `Bank-Management-System-Sprint-2.json` have valid, pre-configured JWT Bearer tokens built directly into each request:
+- **Manager Token:** Pre-loaded on requests `01`, `13-14`, and `20`.
+- **Customer Token:** Pre-loaded on requests `02-12` and `15-16`.
+- **Admin Token:** Pre-loaded on requests `17-19` and `21`.
+
+You do not need to copy or paste any tokens manually while screen recording. Just click **Send** on each request!
