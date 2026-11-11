@@ -37,18 +37,19 @@ router.get("/:accountId/mini", requireAuth, async (req, res) => {
     const transactions = await prisma.transaction.findMany({
       where: {
         OR: [
-          { fromAccountId: accountId },
-          { toAccountId: accountId },
+          { sourceAccountId: accountId },
+          { destinationAccountId: accountId },
         ],
       },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: {
         referenceNumber: true,
-        fromAccountId: true,
-        toAccountId: true,
+        type: true,
+        sourceAccountId: true,
+        destinationAccountId: true,
         amount: true,
-        note: true,
+        status: true,
         createdAt: true,
       },
     });
@@ -56,10 +57,11 @@ router.get("/:accountId/mini", requireAuth, async (req, res) => {
     return res.status(200).json({
       accountId,
       accountType: account.accountType,
-      currentBalance: account.balance,
+      currentBalance: Number(account.balance),
       transactions: transactions.map((t) => ({
         ...t,
-        type: t.fromAccountId === accountId ? "DEBIT" : "CREDIT",
+        amount: Number(t.amount),
+        direction: t.sourceAccountId === accountId ? "DEBIT" : "CREDIT",
       })),
     });
   } catch (error) {
@@ -126,8 +128,8 @@ router.get("/:accountId/full", requireAuth, async (req, res) => {
     const transactions = await prisma.transaction.findMany({
       where: {
         OR: [
-          { fromAccountId: accountId },
-          { toAccountId: accountId },
+          { sourceAccountId: accountId },
+          { destinationAccountId: accountId },
         ],
         createdAt: {
           gte: fromDate,
@@ -137,10 +139,11 @@ router.get("/:accountId/full", requireAuth, async (req, res) => {
       orderBy: { createdAt: "asc" },
       select: {
         referenceNumber: true,
-        fromAccountId: true,
-        toAccountId: true,
+        type: true,
+        sourceAccountId: true,
+        destinationAccountId: true,
         amount: true,
-        note: true,
+        status: true,
         createdAt: true,
       },
     });
@@ -148,11 +151,12 @@ router.get("/:accountId/full", requireAuth, async (req, res) => {
     return res.status(200).json({
       accountId,
       accountType: account.accountType,
-      currentBalance: account.balance,
+      currentBalance: Number(account.balance),
       period: { from, to },
       transactions: transactions.map((t) => ({
         ...t,
-        type: t.fromAccountId === accountId ? "DEBIT" : "CREDIT",
+        amount: Number(t.amount),
+        direction: t.sourceAccountId === accountId ? "DEBIT" : "CREDIT",
       })),
     });
   } catch (error) {

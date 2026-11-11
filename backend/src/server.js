@@ -89,8 +89,6 @@ if (process.env.NODE_ENV === "production" || process.env.ENABLE_HTTPS === "true"
       // Enforce TLS 1.2 or higher (BMS-SR-001)
       minVersion: "TLSv1.2",
       maxVersion: "TLSv1.3",
-      // Disable insecure protocols
-      secureProtocol: "TLSv1_2_method",
       secureOptions: 
         tls.SSL_OP_NO_SSLv2 | 
         tls.SSL_OP_NO_SSLv3 | 

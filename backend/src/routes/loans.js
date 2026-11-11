@@ -1,8 +1,7 @@
 const express = require("express");
 const { requireAuth, requireManager } = require("../middleware/authMiddleware");
 const prisma = require("../config/prisma");
-const { recordAuditLog } = require("../services/auditLogger");
-const { sendOtp } = require("../services/otpService");
+const auditLogger = require("../services/auditLogger");
 const { randomUUID } = require("crypto");
 
 const router = express.Router();
@@ -10,20 +9,30 @@ const router = express.Router();
 // BMS-F-014: Customer submits a loan application
 router.post("/apply", requireAuth, async (req, res) => {
   try {
-    const { amount, purpose } = req.body;
+    const { amount, requestedAmount, tenureMonths, purpose } = req.body;
     const userId = req.user.id;
 
-    if (!amount || !purpose) {
+    const rawAmount = requestedAmount !== undefined ? requestedAmount : amount;
+
+    if (!rawAmount || !purpose) {
       return res.status(400).json({
         error: "Amount and purpose are required",
       });
     }
 
-    const parsedAmount = Number(amount);
+    const parsedAmount = Number(rawAmount);
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       return res.status(400).json({
         error: "Amount must be a positive number",
+      });
+    }
+
+    const parsedTenure = Number(tenureMonths) || 12;
+
+    if (!Number.isInteger(parsedTenure) || parsedTenure <= 0) {
+      return res.status(400).json({
+        error: "Tenure must be a positive integer in months",
       });
     }
 
@@ -39,13 +48,14 @@ router.post("/apply", requireAuth, async (req, res) => {
       data: {
         referenceNumber,
         userId,
-        amount: parsedAmount,
+        requestedAmount: parsedAmount,
+        tenureMonths: parsedTenure,
         purpose: purpose.trim(),
-        status: "PENDING",
+        status: "SUBMITTED",
       },
     });
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId,
       event: "LOAN_APPLICATION_SUBMITTED",
       outcome: `REF:${referenceNumber} AMOUNT:${parsedAmount}`,
@@ -54,6 +64,7 @@ router.post("/apply", requireAuth, async (req, res) => {
     return res.status(201).json({
       message: "Loan application submitted successfully",
       referenceNumber: loan.referenceNumber,
+      requestedAmount: Number(loan.requestedAmount),
       status: loan.status,
     });
   } catch (error) {
@@ -73,14 +84,16 @@ router.get("/status/:referenceNumber", requireAuth, async (req, res) => {
     const loan = await prisma.loan.findUnique({
       where: { referenceNumber },
       select: {
+        id: true,
         referenceNumber: true,
         userId: true,
-        amount: true,
+        requestedAmount: true,
+        tenureMonths: true,
         purpose: true,
         status: true,
         remarks: true,
         createdAt: true,
-        reviewedAt: true,
+        updatedAt: true,
       },
     });
 
@@ -97,7 +110,11 @@ router.get("/status/:referenceNumber", requireAuth, async (req, res) => {
     }
 
     const { userId: _, ...response } = loan;
-    return res.status(200).json(response);
+    return res.status(200).json({
+      ...response,
+      amount: Number(loan.requestedAmount),
+      requestedAmount: Number(loan.requestedAmount),
+    });
   } catch (error) {
     console.error("Loan status error:", error.message);
 
@@ -111,12 +128,13 @@ router.get("/status/:referenceNumber", requireAuth, async (req, res) => {
 router.get("/pending", requireManager, async (req, res) => {
   try {
     const loans = await prisma.loan.findMany({
-      where: { status: "PENDING" },
+      where: { status: "SUBMITTED" },
       select: {
         id: true,
         referenceNumber: true,
         userId: true,
-        amount: true,
+        requestedAmount: true,
+        tenureMonths: true,
         purpose: true,
         status: true,
         createdAt: true,
@@ -124,7 +142,13 @@ router.get("/pending", requireManager, async (req, res) => {
       orderBy: { createdAt: "asc" },
     });
 
-    return res.status(200).json({ loans });
+    return res.status(200).json({
+      loans: loans.map((l) => ({
+        ...l,
+        amount: Number(l.requestedAmount),
+        requestedAmount: Number(l.requestedAmount),
+      })),
+    });
   } catch (error) {
     console.error("Fetch pending loans error:", error.message);
 
@@ -171,7 +195,7 @@ router.post("/decision/:id", requireManager, async (req, res) => {
       });
     }
 
-    if (loan.status !== "PENDING") {
+    if (loan.status !== "SUBMITTED") {
       return res.status(409).json({
         error: `Loan has already been ${loan.status.toLowerCase()}`,
       });
@@ -189,11 +213,10 @@ router.post("/decision/:id", requireManager, async (req, res) => {
         status: normalizedDecision,
         remarks: remarks.trim(),
         reviewedBy: managerId,
-        reviewedAt: new Date(),
       },
     });
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId: managerId,
       event: `LOAN_${normalizedDecision}`,
       outcome: `REF:${loan.referenceNumber} CUSTOMER:${loan.userId}`,
@@ -204,12 +227,12 @@ router.post("/decision/:id", requireManager, async (req, res) => {
       try {
         const nodemailer = require("nodemailer");
         const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: Number(process.env.SMTP_PORT || 587),
+          host: process.env.SMTP_HOST || process.env.EMAIL_HOST,
+          port: Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 587),
           secure: process.env.SMTP_SECURE === "true",
           auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+            user: process.env.SMTP_USER || process.env.EMAIL_USER,
+            pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
           },
         });
 
@@ -220,11 +243,11 @@ router.post("/decision/:id", requireManager, async (req, res) => {
 
         const text =
           normalizedDecision === "APPROVED"
-            ? `Your loan application (Ref: ${loan.referenceNumber}) for ${loan.amount} has been approved.\n\nRemarks: ${remarks.trim()}`
-            : `Your loan application (Ref: ${loan.referenceNumber}) for ${loan.amount} has been rejected.\n\nRemarks: ${remarks.trim()}`;
+            ? `Your loan application (Ref: ${loan.referenceNumber}) for ${Number(loan.requestedAmount)} has been approved.\n\nRemarks: ${remarks.trim()}`
+            : `Your loan application (Ref: ${loan.referenceNumber}) for ${Number(loan.requestedAmount)} has been rejected.\n\nRemarks: ${remarks.trim()}`;
 
         await transporter.sendMail({
-          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          from: process.env.SMTP_FROM || process.env.EMAIL_USER,
           to: customer.email,
           subject,
           text,

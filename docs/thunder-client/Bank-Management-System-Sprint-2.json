@@ -1,0 +1,408 @@
+{
+    "client": "Thunder Client",
+    "clientName": "Thunder Client",
+    "collectionName": "Bank Management System - Sprint 2",
+    "collectionId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+    "dateExported": "2026-11-11T13:12:14.063Z",
+    "version": "1.4",
+    "folders": [],
+    "requests": [
+        {
+            "_id": "0cae4aa8-f3a4-4ee7-8c68-14dce2fa6d35",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "01 - Manager - Activate Account (BMS-F-007, PR #46)",
+            "url": "https://localhost:3443/accounts/1/activate",
+            "method": "POST",
+            "sortNum": 10000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGUiOiJNQU5BR0VSIiwic2Vzc2lvbklkIjoiZGVtby1zZXNzaW9uLW1hbmFnZXIiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.oKDz4t3h9MQOAk_utRVZsdMPHGG7YrN1h1-D0rqd1fg"
+            }
+        },
+        {
+            "_id": "1cf73e78-c40c-43aa-a1b1-2e8a61ad7b5b",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "02 - Cash Deposit and Balance Update (BMS-F-008, PR #50)",
+            "url": "https://localhost:3443/accounts/1/deposit",
+            "method": "POST",
+            "sortNum": 20000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"amount\": 25000\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "3ad5b67e-8189-4b25-82b7-50277ae7efa1",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "03 - Cash Withdrawal - Balance Check (BMS-F-009, PR #50)",
+            "url": "https://localhost:3443/accounts/1/withdraw",
+            "method": "POST",
+            "sortNum": 30000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"amount\": 5000\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "eb75edc9-6d6f-4cfc-99ef-ac5def6d68b2",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "04 - Withdrawal Rejection - Insufficient Balance (BMS-F-009, PR #50)",
+            "url": "https://localhost:3443/accounts/1/withdraw",
+            "method": "POST",
+            "sortNum": 40000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"amount\": 9999999\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "133962c5-6dce-4a20-8f3d-765671e5dc2f",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "05 - Withdrawal Rejection - Daily Limit Exceeded (BMS-F-009, PR #50)",
+            "url": "https://localhost:3443/accounts/1/withdraw",
+            "method": "POST",
+            "sortNum": 50000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"amount\": 60000\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "82f04092-b0cc-4e3c-94d1-0130c2a2026e",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "06 - Unique Transaction Receipt Fetch (BMS-F-010, PR #50)",
+            "url": "https://localhost:3443/accounts/receipt/DEP-INIT-001",
+            "method": "GET",
+            "sortNum": 60000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "beb3ae0e-1a22-43a9-9541-580ae63907e1",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "07 - Intra-Bank Transfer - Low-Value Direct (BMS-F-011, PR #46)",
+            "url": "https://localhost:3443/transfers/initiate",
+            "method": "POST",
+            "sortNum": 70000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"fromAccountId\": 1,\n  \"toAccountId\": 2,\n  \"amount\": 3000\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "f062d98e-f197-4a42-aca7-23fd37c077cc",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "08 - Intra-Bank Transfer - High-Value OTP Required (BMS-F-012, PR #46)",
+            "url": "https://localhost:3443/transfers/initiate",
+            "method": "POST",
+            "sortNum": 80000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"fromAccountId\": 1,\n  \"toAccountId\": 2,\n  \"amount\": 15000\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "5f1c3ad0-0025-4a00-b6d1-ee94f5d60a2b",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "09 - Verify Transfer OTP (BMS-F-012, PR #46)",
+            "url": "https://localhost:3443/transfers/verify-otp",
+            "method": "POST",
+            "sortNum": 90000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"fromAccountId\": 1,\n  \"toAccountId\": 2,\n  \"amount\": 15000,\n  \"otp\": \"REPLACE_WITH_RECEIVED_OTP\"\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "3d1ed4d6-f680-484b-8523-0ad90f7a2b69",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "10 - Daily Transfer Limit Enforcement (BMS-F-013, PR #46)",
+            "url": "https://localhost:3443/transfers/initiate",
+            "method": "POST",
+            "sortNum": 100000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"fromAccountId\": 1,\n  \"toAccountId\": 2,\n  \"amount\": 55000\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "b4d97b61-b32e-4b00-87d0-b5d7c79b1659",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "11 - Loan Application Submission (BMS-F-014, PR #46)",
+            "url": "https://localhost:3443/loans/apply",
+            "method": "POST",
+            "sortNum": 110000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"amount\": 100000,\n  \"tenureMonths\": 24,\n  \"purpose\": \"Home Renovation\"\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "2b420037-296b-4658-b16b-f489ba6aa856",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "12 - Customer Loan Status Check (BMS-F-014, PR #46)",
+            "url": "https://localhost:3443/loans/status/LOAN-DEMO-001",
+            "method": "GET",
+            "sortNum": 120000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "7cd20a0b-9172-4012-a8d4-652546b01530",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "13 - Manager - View Pending Loans (BMS-F-015, PR #46)",
+            "url": "https://localhost:3443/loans/pending",
+            "method": "GET",
+            "sortNum": 130000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGUiOiJNQU5BR0VSIiwic2Vzc2lvbklkIjoiZGVtby1zZXNzaW9uLW1hbmFnZXIiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.oKDz4t3h9MQOAk_utRVZsdMPHGG7YrN1h1-D0rqd1fg"
+            }
+        },
+        {
+            "_id": "67f88a2a-21a1-45f8-a51f-a022f3bbce1f",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "14 - Manager - Loan Approval & Customer Notification (BMS-F-015 & BMS-F-016, PR #46)",
+            "url": "https://localhost:3443/loans/decision/1",
+            "method": "POST",
+            "sortNum": 140000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"decision\": \"APPROVED\",\n  \"remarks\": \"Credit check passed. Approved at 8.5% p.a.\"\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGUiOiJNQU5BR0VSIiwic2Vzc2lvbklkIjoiZGVtby1zZXNzaW9uLW1hbmFnZXIiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.oKDz4t3h9MQOAk_utRVZsdMPHGG7YrN1h1-D0rqd1fg"
+            }
+        },
+        {
+            "_id": "b5a51d60-c5ce-4a63-8194-cd5b5bb6a748",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "15 - Mini-Statement (Last 10 Transactions) (BMS-F-017, PR #46)",
+            "url": "https://localhost:3443/statements/1/mini",
+            "method": "GET",
+            "sortNum": 150000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "5a22dcf8-e8e8-4f2c-bb88-39e57e09b082",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "16 - Full Account Statement for Date Range (BMS-F-017, PR #46)",
+            "url": "https://localhost:3443/statements/1/full?from=2026-10-01&to=2026-11-30",
+            "method": "GET",
+            "sortNum": 160000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGUiOiJDVVNUT01FUiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1jdXN0b21lcjEiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.5nSQFtqyE1ZJQFPChhRDzkk5SvCT6Ulv9eKUM0tgYfo"
+            }
+        },
+        {
+            "_id": "0330e783-d5fd-4f4e-8f80-c9171b08807f",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "17 - Admin - Create Staff User (BMS-F-018, PR #46)",
+            "url": "https://localhost:3443/admin/users",
+            "method": "POST",
+            "sortNum": 170000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"fullName\": \"Staff Teller Jane\",\n  \"email\": \"teller.jane@bank.com\",\n  \"mobile\": \"9876543999\",\n  \"password\": \"SecurePass123!\",\n  \"role\": \"TELLER\"\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1hZG1pbiIsImlhdCI6MTc5NDQwNDE3MywiZXhwIjoxNzk2OTk2MTczfQ.3kZDsm5TmyFgAGhG-TiYekkJ8CakXr5mtT8IQOqCV6Q"
+            }
+        },
+        {
+            "_id": "0a233edd-592b-4a4c-a325-43bf29f8825a",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "18 - Admin - Update User Role (BMS-F-018 & BMS-SR-004, PR #38 & #46)",
+            "url": "https://localhost:3443/admin/users/1/role",
+            "method": "PATCH",
+            "sortNum": 180000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"role\": \"MANAGER\"\n}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1hZG1pbiIsImlhdCI6MTc5NDQwNDE3MywiZXhwIjoxNzk2OTk2MTczfQ.3kZDsm5TmyFgAGhG-TiYekkJ8CakXr5mtT8IQOqCV6Q"
+            }
+        },
+        {
+            "_id": "6b3e7153-68a0-4143-b762-a308d3a422a0",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "19 - Admin - List All Users (BMS-F-018, PR #46)",
+            "url": "https://localhost:3443/admin/users",
+            "method": "GET",
+            "sortNum": 190000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1hZG1pbiIsImlhdCI6MTc5NDQwNDE3MywiZXhwIjoxNzk2OTk2MTczfQ.3kZDsm5TmyFgAGhG-TiYekkJ8CakXr5mtT8IQOqCV6Q"
+            }
+        },
+        {
+            "_id": "d4a8fe0a-b729-46ea-8125-72a4b548fd0a",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "20 - Periodic Banking Reports (JSON) (PR #48)",
+            "url": "https://localhost:3443/api/reports?type=transactions&startDate=2026-10-01&endDate=2026-11-30&format=json",
+            "method": "GET",
+            "sortNum": 200000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGUiOiJNQU5BR0VSIiwic2Vzc2lvbklkIjoiZGVtby1zZXNzaW9uLW1hbmFnZXIiLCJpYXQiOjE3OTQ0MDQxNzMsImV4cCI6MTc5Njk5NjE3M30.oKDz4t3h9MQOAk_utRVZsdMPHGG7YrN1h1-D0rqd1fg"
+            }
+        },
+        {
+            "_id": "43b20459-3df7-49a9-93d4-9f70934e1da2",
+            "colId": "0169d9bb-be41-49f2-b8c5-fbdca041e673",
+            "containerId": "",
+            "name": "21 - Admin - Tamper-Resistant Audit Log Verification (PR #43 & #49)",
+            "url": "https://localhost:3443/audit-logs/verify",
+            "method": "GET",
+            "sortNum": 210000,
+            "created": "2026-11-11T13:12:14.063Z",
+            "modified": "2026-11-11T13:12:14.063Z",
+            "headers": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsInNlc3Npb25JZCI6ImRlbW8tc2Vzc2lvbi1hZG1pbiIsImlhdCI6MTc5NDQwNDE3MywiZXhwIjoxNzk2OTk2MTczfQ.3kZDsm5TmyFgAGhG-TiYekkJ8CakXr5mtT8IQOqCV6Q"
+            }
+        }
+    ],
+    "ref": "bms-sprint2-collection"
+}

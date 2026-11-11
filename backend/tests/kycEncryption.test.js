@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const jwt = require("jsonwebtoken");
 
 process.env.JWT_SECRET = "test-secret";
+process.env.DATA_ENCRYPTION_KEY = require("crypto").randomBytes(32).toString("base64");
 
 const prisma = require("../src/config/prisma");
 const auditLogger = require("../src/services/auditLogger");

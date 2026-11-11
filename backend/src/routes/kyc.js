@@ -6,7 +6,7 @@ const {
 } = require("../middleware/authMiddleware");
 const prisma = require("../config/prisma");
 const { randomUUID } = require("crypto");
-const { recordAuditLog } = require("../services/auditLogger");
+const auditLogger = require("../services/auditLogger");
 const { encryptData, decryptIfEncrypted } = require("../services/dataEncryption");
 const router = express.Router();
 
@@ -76,7 +76,7 @@ router.post("/apply", requireCustomer, async (req, res) => {
       },
     });
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
   userId,
   event: "KYC_APPLICATION_SUBMITTED",
   outcome: `REF:${referenceNumber}`,
@@ -277,17 +277,40 @@ router.post("/decision/:id", requireManager, async (req, res) => {
       },
     });
 
-    await recordAuditLog({
-  userId: managerId,
-  event: `KYC_APPLICATION_${decision}`,
-  outcome: `REF:${application.referenceNumber}`,
-});
+    let createdAccount = null;
+    if (decision === "APPROVED") {
+      const existingAccount = await prisma.account.findUnique({
+        where: { applicationId: id },
+      });
+      if (!existingAccount) {
+        const accountNumber = `ACC${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
+        createdAccount = await prisma.account.create({
+          data: {
+            accountNumber,
+            userId: application.userId,
+            applicationId: application.id,
+            accountType: application.accountType,
+            balance: 0,
+            status: "PENDING",
+          },
+        });
+      } else {
+        createdAccount = existingAccount;
+      }
+    }
+
+    await auditLogger.recordAuditLog({
+      userId: managerId,
+      event: `KYC_APPLICATION_${decision}`,
+      outcome: `REF:${application.referenceNumber}`,
+    });
 
     return res.status(200).json({
       message: `Application ${decision.toLowerCase()} successfully`,
       referenceNumber: updated.referenceNumber,
       status: updated.status,
       rejectionReason: updated.rejectionReason,
+      accountId: createdAccount ? createdAccount.id : undefined,
     });
   } catch (error) {
     console.error("KYC decision error:", error.message);

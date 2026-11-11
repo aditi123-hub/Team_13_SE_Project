@@ -2,7 +2,7 @@ const express = require("express");
 const { requireAuth } = require("../middleware/authMiddleware");
 const prisma = require("../config/prisma");
 const { sendOtp, verifyOtp } = require("../services/otpService");
-const { recordAuditLog } = require("../services/auditLogger");
+const auditLogger = require("../services/auditLogger");
 const { randomUUID } = require("crypto");
 
 const router = express.Router();
@@ -10,31 +10,29 @@ const router = express.Router();
 const HIGH_VALUE_THRESHOLD = Number(process.env.HIGH_VALUE_THRESHOLD) || 10000;
 const DAILY_TRANSFER_LIMIT = Number(process.env.DAILY_TRANSFER_LIMIT) || 50000;
 
-// Reset daily transfer total if it's a new calendar day
-async function getAvailableDailyLimit(account) {
+// Calculate available daily transfer limit based on today's completed transfers
+async function getAvailableDailyLimit(accountId) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const lastDate = account.lastTransferDate
-    ? new Date(account.lastTransferDate)
-    : null;
+  const todayTransfers = await prisma.transaction.aggregate({
+    where: {
+      sourceAccountId: accountId,
+      type: "TRANSFER",
+      status: "COMPLETED",
+      createdAt: { gte: today },
+    },
+    _sum: { amount: true },
+  });
 
-  if (!lastDate || lastDate < today) {
-    // New day - reset
-    await prisma.account.update({
-      where: { id: account.id },
-      data: { dailyTransferred: 0, lastTransferDate: new Date() },
-    });
-    return DAILY_TRANSFER_LIMIT;
-  }
-
-  return DAILY_TRANSFER_LIMIT - account.dailyTransferred;
+  const transferredToday = Number(todayTransfers._sum.amount || 0);
+  return Math.max(0, DAILY_TRANSFER_LIMIT - transferredToday);
 }
 
 // BMS-F-011: Intra-bank funds transfer - Step 1: initiate
 router.post("/initiate", requireAuth, async (req, res) => {
   try {
-    const { fromAccountId, toAccountId, amount, note } = req.body;
+    const { fromAccountId, toAccountId, amount } = req.body;
     const userId = req.user.id;
 
     if (!fromAccountId || !toAccountId || amount === undefined || amount === null || amount === "") {
@@ -43,7 +41,7 @@ router.post("/initiate", requireAuth, async (req, res) => {
       });
     }
 
-    if (fromAccountId === toAccountId) {
+    if (Number(fromAccountId) === Number(toAccountId)) {
       return res.status(400).json({
         error: "Source and destination accounts must be different",
       });
@@ -68,32 +66,32 @@ router.post("/initiate", requireAuth, async (req, res) => {
       });
     }
 
-    if (!fromAccount.isActive) {
+    if (fromAccount.status !== "ACTIVE") {
       return res.status(400).json({
         error: "Source account is not active",
       });
     }
 
-    // Validate destination account exists
+    // Validate destination account exists and is active
     const toAccount = await prisma.account.findUnique({
       where: { id: Number(toAccountId) },
     });
 
-    if (!toAccount || !toAccount.isActive) {
+    if (!toAccount || toAccount.status !== "ACTIVE") {
       return res.status(404).json({
         error: "Destination account not found or inactive",
       });
     }
 
     // Check sufficient balance
-    if (fromAccount.balance < parsedAmount) {
+    if (Number(fromAccount.balance) < parsedAmount) {
       return res.status(400).json({
         error: "Insufficient balance",
       });
     }
 
     // BMS-F-013: Daily limit enforcement
-    const available = await getAvailableDailyLimit(fromAccount);
+    const available = await getAvailableDailyLimit(fromAccount.id);
 
     if (parsedAmount > available) {
       return res.status(400).json({
@@ -112,7 +110,7 @@ router.post("/initiate", requireAuth, async (req, res) => {
     if (parsedAmount >= HIGH_VALUE_THRESHOLD) {
       await sendOtp(user.email, "TRANSFER");
 
-      await recordAuditLog({
+      await auditLogger.recordAuditLog({
         userId,
         event: "TRANSFER_OTP_SENT",
         outcome: `FROM:${fromAccountId} TO:${toAccountId} AMOUNT:${parsedAmount}`,
@@ -128,31 +126,29 @@ router.post("/initiate", requireAuth, async (req, res) => {
     // Execute low-value transfer directly
     const referenceNumber = `TXN-${randomUUID().split("-")[0].toUpperCase()}`;
 
-    await prisma.$transaction([
+    const [transaction] = await prisma.$transaction([
+      prisma.transaction.create({
+        data: {
+          referenceNumber,
+          type: "TRANSFER",
+          sourceAccountId: fromAccount.id,
+          destinationAccountId: toAccount.id,
+          amount: parsedAmount,
+          status: "COMPLETED",
+          performedBy: userId,
+        },
+      }),
       prisma.account.update({
         where: { id: fromAccount.id },
-        data: {
-          balance: { decrement: parsedAmount },
-          dailyTransferred: { increment: parsedAmount },
-          lastTransferDate: new Date(),
-        },
+        data: { balance: { decrement: parsedAmount } },
       }),
       prisma.account.update({
         where: { id: toAccount.id },
         data: { balance: { increment: parsedAmount } },
       }),
-      prisma.transaction.create({
-        data: {
-          referenceNumber,
-          fromAccountId: fromAccount.id,
-          toAccountId: toAccount.id,
-          amount: parsedAmount,
-          note: note?.trim() || null,
-        },
-      }),
     ]);
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId,
       event: "TRANSFER_COMPLETED",
       outcome: `REF:${referenceNumber} FROM:${fromAccountId} TO:${toAccountId} AMOUNT:${parsedAmount}`,
@@ -160,7 +156,7 @@ router.post("/initiate", requireAuth, async (req, res) => {
 
     return res.status(200).json({
       message: "Transfer completed successfully",
-      referenceNumber,
+      referenceNumber: transaction.referenceNumber,
       amount: parsedAmount,
     });
   } catch (error) {
@@ -175,7 +171,7 @@ router.post("/initiate", requireAuth, async (req, res) => {
 // BMS-F-012: Verify OTP and complete high-value transfer
 router.post("/verify-otp", requireAuth, async (req, res) => {
   try {
-    const { otp, fromAccountId, toAccountId, amount, note } = req.body;
+    const { otp, fromAccountId, toAccountId, amount } = req.body;
     const userId = req.user.id;
 
     if (!otp || !fromAccountId || !toAccountId || amount === undefined || amount === null || amount === "") {
@@ -208,13 +204,19 @@ router.post("/verify-otp", requireAuth, async (req, res) => {
       });
     }
 
-    if (fromAccount.balance < parsedAmount) {
+    if (fromAccount.status !== "ACTIVE") {
+      return res.status(400).json({
+        error: "Source account is not active",
+      });
+    }
+
+    if (Number(fromAccount.balance) < parsedAmount) {
       return res.status(400).json({
         error: "Insufficient balance",
       });
     }
 
-    const available = await getAvailableDailyLimit(fromAccount);
+    const available = await getAvailableDailyLimit(fromAccount.id);
 
     if (parsedAmount > available) {
       return res.status(400).json({
@@ -226,7 +228,7 @@ router.post("/verify-otp", requireAuth, async (req, res) => {
       where: { id: Number(toAccountId) },
     });
 
-    if (!toAccount || !toAccount.isActive) {
+    if (!toAccount || toAccount.status !== "ACTIVE") {
       return res.status(404).json({
         error: "Destination account not found or inactive",
       });
@@ -240,7 +242,7 @@ router.post("/verify-otp", requireAuth, async (req, res) => {
     const valid = verifyOtp(user.email, otp, "TRANSFER");
 
     if (!valid) {
-      await recordAuditLog({
+      await auditLogger.recordAuditLog({
         userId,
         event: "TRANSFER_OTP_FAILED",
         outcome: `FROM:${fromAccountId} TO:${toAccountId} AMOUNT:${parsedAmount}`,
@@ -253,31 +255,29 @@ router.post("/verify-otp", requireAuth, async (req, res) => {
 
     const referenceNumber = `TXN-${randomUUID().split("-")[0].toUpperCase()}`;
 
-    await prisma.$transaction([
+    const [transaction] = await prisma.$transaction([
+      prisma.transaction.create({
+        data: {
+          referenceNumber,
+          type: "TRANSFER",
+          sourceAccountId: fromAccount.id,
+          destinationAccountId: toAccount.id,
+          amount: parsedAmount,
+          status: "COMPLETED",
+          performedBy: userId,
+        },
+      }),
       prisma.account.update({
         where: { id: fromAccount.id },
-        data: {
-          balance: { decrement: parsedAmount },
-          dailyTransferred: { increment: parsedAmount },
-          lastTransferDate: new Date(),
-        },
+        data: { balance: { decrement: parsedAmount } },
       }),
       prisma.account.update({
         where: { id: toAccount.id },
         data: { balance: { increment: parsedAmount } },
       }),
-      prisma.transaction.create({
-        data: {
-          referenceNumber,
-          fromAccountId: fromAccount.id,
-          toAccountId: toAccount.id,
-          amount: parsedAmount,
-          note: note?.trim() || null,
-        },
-      }),
     ]);
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId,
       event: "HIGH_VALUE_TRANSFER_COMPLETED",
       outcome: `REF:${referenceNumber} FROM:${fromAccountId} TO:${toAccountId} AMOUNT:${parsedAmount}`,
@@ -285,7 +285,7 @@ router.post("/verify-otp", requireAuth, async (req, res) => {
 
     return res.status(200).json({
       message: "Transfer verified and completed successfully",
-      referenceNumber,
+      referenceNumber: transaction.referenceNumber,
       amount: parsedAmount,
     });
   } catch (error) {

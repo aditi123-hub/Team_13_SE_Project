@@ -1,7 +1,7 @@
 const express = require("express");
 const { requireAuth } = require("../middleware/authMiddleware");
 const prisma = require("../config/prisma");
-const { recordAuditLog } = require("../services/auditLogger");
+const auditLogger = require("../services/auditLogger");
 const { randomUUID } = require("crypto");
 
 const router = express.Router();
@@ -69,7 +69,7 @@ router.post("/:accountId/deposit", requireAuth, async (req, res) => {
       }),
     ]);
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId,
       event: "DEPOSIT_COMPLETED",
       outcome: `REF:${referenceNumber} ACCOUNT:${accountId} AMOUNT:${parsedAmount}`,
@@ -181,7 +181,7 @@ router.post("/:accountId/withdraw", requireAuth, async (req, res) => {
       }),
     ]);
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId,
       event: "WITHDRAWAL_COMPLETED",
       outcome: `REF:${referenceNumber} ACCOUNT:${accountId} AMOUNT:${parsedAmount}`,
@@ -306,7 +306,7 @@ router.post("/:accountId/activate", requireAuth, async (req, res) => {
       data: { status: "ACTIVE" },
     });
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId: req.user.id,
       event: "ACCOUNT_ACTIVATED",
       outcome: `ACCOUNT:${accountId} USER:${account.userId}`,

@@ -2,7 +2,7 @@ const express = require("express");
 const { requireAdmin } = require("../middleware/authMiddleware");
 const bcrypt = require("bcrypt");
 const prisma = require("../config/prisma");
-const { recordAuditLog } = require("../services/auditLogger");
+const auditLogger = require("../services/auditLogger");
 
 const router = express.Router();
 
@@ -73,7 +73,7 @@ router.post("/users", requireAdmin, async (req, res) => {
       },
     });
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId: adminId,
       event: "ADMIN_USER_CREATED",
       outcome: `USER:${user.id} ROLE:${normalizedRole}`,
@@ -130,7 +130,7 @@ router.patch("/users/:userId/role", requireAdmin, async (req, res) => {
       select: { id: true, fullName: true, email: true, role: true },
     });
 
-    await recordAuditLog({
+    await auditLogger.recordAuditLog({
       userId: adminId,
       event: "ADMIN_ROLE_UPDATED",
       outcome: `USER:${userId} FROM:${user.role} TO:${normalizedRole}`,

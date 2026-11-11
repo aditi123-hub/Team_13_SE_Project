@@ -25,7 +25,7 @@
                     "  \"email\": \"demo.customer2@example.com\",",
                     "  \"mobile\": \"9876543213\",",
                     "  \"governmentIdNum\": \"DEMO123457\",",
-                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
@@ -50,7 +50,7 @@
                     "  \"email\": \"demo.customer2@example.com\",",
                     "  \"mobile\": \"9876543213\",",
                     "  \"governmentIdNum\": \"DEMO123457\",",
-                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
@@ -72,7 +72,7 @@
                 "raw": [
                     "{",
                     "  \"email\": \"demo.customer2@example.com\",",
-                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
@@ -94,7 +94,7 @@
                 "raw": [
                     "{",
                     "  \"email\": \"demo.customer2@example.com\",",
-                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
@@ -116,7 +116,7 @@
                 "raw": [
                     "{",
                     "  \"email\": \"lockout.test@example.com\",",
-                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
@@ -154,7 +154,7 @@
                 "raw": [
                     "{",
                     "  \"email\": \"YOUR_ADMIN_EMAIL\",",
-                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
@@ -176,7 +176,7 @@
                 "raw": [
                     "{",
                     "  \"email\": \"YOUR_ADMIN_EMAIL\",",
-                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
@@ -265,7 +265,7 @@
                 "raw": [
                     "{",
                     "  \"email\": \"photosaditi123@gmail.com\",",
-                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"password\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
@@ -287,7 +287,7 @@
                 "raw": [
                     "{",
                     "  \"email\": \"photosaditi123@gmail.com\",",
-                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE"",
+                    "  \"otp\": \"REPLACE_WITH_YOUR_VALUE",
                     "}"
                 ],
                 "form": []
