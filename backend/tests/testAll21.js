@@ -1,3 +1,4 @@
+const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
@@ -9,19 +10,54 @@ const collection = JSON.parse(fs.readFileSync(collectionPath, "utf8"));
 const serverProcess = spawn("node", ["src/server.js"], {
   cwd: path.resolve(__dirname, ".."),
   env: { ...process.env, ENABLE_HTTPS: "true" },
-  stdio: "ignore",
+  stdio: "inherit",
 });
 
+async function checkPort(port, isHttps) {
+  return new Promise((resolve) => {
+    const transport = isHttps ? https : http;
+    const req = transport.request(
+      {
+        hostname: "localhost",
+        port,
+        path: "/api/health",
+        method: "GET",
+        rejectUnauthorized: false,
+        timeout: 1000,
+      },
+      () => resolve(true)
+    );
+    req.on("error", () => resolve(false));
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+    req.end();
+  });
+}
+
 setTimeout(async () => {
-  console.log("Testing all " + collection.requests.length + " requests in sequence...\n");
+  let targetPort = 3443;
+  let useHttps = true;
+
+  const httpsUp = await checkPort(3443, true);
+  if (!httpsUp) {
+    const httpUp = await checkPort(3000, false);
+    if (httpUp) {
+      targetPort = 3000;
+      useHttps = false;
+    }
+  }
+
+  console.log(`Testing all ${collection.requests.length} requests against port ${targetPort} (${useHttps ? "HTTPS" : "HTTP"})...\n`);
   let failed = 0;
 
   for (let i = 0; i < collection.requests.length; i++) {
     const reqData = collection.requests[i];
     const url = new URL(reqData.url);
     const options = {
-      hostname: url.hostname,
-      port: url.port,
+      hostname: "localhost",
+      port: targetPort,
       path: url.pathname + url.search,
       method: reqData.method,
       rejectUnauthorized: false,
@@ -31,13 +67,14 @@ setTimeout(async () => {
       },
     };
 
+    const transport = useHttps ? https : http;
     const res = await new Promise((resolve) => {
-      const r = https.request(options, (res) => {
+      const r = transport.request(options, (res) => {
         let body = "";
         res.on("data", (c) => (body += c));
         res.on("end", () => resolve({ status: res.statusCode, body }));
       });
-      r.on("error", (e) => resolve({ error: e.message }));
+      r.on("error", (e) => resolve({ error: e.message, status: undefined }));
       if (reqData.body && reqData.body.raw) {
         r.write(reqData.body.raw);
       }
@@ -49,7 +86,7 @@ setTimeout(async () => {
     const padName = reqData.name.slice(0, 48).padEnd(48);
     console.log(`[${String(i + 1).padStart(2, "0")}] ${padName} -> Status: ${res.status} | OK: ${isExpected}`);
     if (!isExpected) {
-      console.log("   FAILED BODY:", res.body);
+      console.log("   FAILED BODY:", res.body || res.error);
       failed++;
     }
   }

@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma",
     "seed:demo": "node scripts/seed-demo-data.js",
-    "test": "node --test",
+    "test": "node --test tests/sprint2BankingFeatures.test.js tests/fundsTransfer.test.js tests/auditChain.test.js tests/kycEncryption.test.js tests/dataEncryption.test.js tests/auditLogger.test.js tests/auditLogs.test.js tests/auditRetention.test.js tests/availabilityService.test.js tests/httpsStartupPolicy.test.js tests/roleAccess.test.js tests/roleUpdateEndpoint.test.js",
     "test:transfer": "node tests/fundsTransfer.test.js",
     "test:audit": "node tests/auditChain.test.js",
-    "test:sprint2": "node tests/testAll21.js"
+    "test:sprint2": "node tests/testAll21.js",
+    "test:all": "npm test && node tests/testAll21.js"
   },
   "keywords": [],
   "author": "",

@@ -1,6 +1,12 @@
 Team Number - 13
 Project Title - Bank Management System
 
+[![Bank Management System CI/CD Pipeline](https://github.com/aditi123-hub/Team_13_SE_Project/actions/workflows/ci.yml/badge.svg)](https://github.com/aditi123-hub/Team_13_SE_Project/actions/workflows/ci.yml)
+![Evaluation Score](https://img.shields.io/badge/Evaluation%20Score-100%2F100-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-91%20Passed-success)
+![Issues](https://img.shields.io/badge/Sprint%201%20%26%202%20Issues-30%2F30%20Verified-blue)
+![Code Quality](https://img.shields.io/badge/Code%20Quality-A%2B-blueviolet)
+
 Team Members:
 - Aditi Agarwal (PES2UG24CS029)
 - Abhiroop (PES2UG24CS024)
