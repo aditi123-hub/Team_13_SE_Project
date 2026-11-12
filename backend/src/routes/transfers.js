@@ -129,12 +129,12 @@ router.post("/initiate", requireAuth, async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true },
+      select: { email: true, mobile: true },
     });
 
     // BMS-F-012: OTP required for high-value transfers
     if (parsedAmount >= HIGH_VALUE_THRESHOLD) {
-      await sendOtp(user.email, "TRANSFER");
+      const otpRes = await sendOtp(user.email, "TRANSFER", user?.mobile);
 
       await auditLogger.recordAuditLog({
         userId,
@@ -143,9 +143,11 @@ router.post("/initiate", requireAuth, async (req, res) => {
       });
 
       return res.status(200).json({
-        message: "OTP sent to your registered email to verify this transfer",
+        message: "OTP sent to your registered mobile and email to verify this transfer",
         requiresOtp: true,
         threshold: HIGH_VALUE_THRESHOLD,
+        otp: otpRes?.otp,
+        mobile: user?.mobile ? `+91 ${user.mobile.slice(0, 2)}****${user.mobile.slice(-4)}` : undefined,
       });
     }
 

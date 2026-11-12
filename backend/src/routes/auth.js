@@ -131,31 +131,44 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 // Step 1: Validate credentials, enforce lockout, and send OTP
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, mobile, identifier, password } = req.body;
+    const loginTarget = email || identifier || mobile;
 
-    if (!email || !password) {
+    if (!loginTarget || !password) {
       return res.status(400).json({
-        error: "Email and password are required",
+        error: "Email/Mobile and password are required",
       });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = loginTarget.trim().toLowerCase();
 
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    let user = null;
+    if (normalizedEmail.includes("@")) {
+      user = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+    } else {
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { mobile: loginTarget.trim() },
+            { email: normalizedEmail },
+          ],
+        },
+      });
+    }
 
     if (!user) {
-  await auditLogger.recordAuditLog({
-    userId: null,
-    event: "LOGIN_ATTEMPT",
-    outcome: "FAILURE",
-  });
+      await auditLogger.recordAuditLog({
+        userId: null,
+        event: "LOGIN_ATTEMPT",
+        outcome: "FAILURE",
+      });
 
-  return res.status(401).json({
-    error: "Invalid email or password",
-  });
-}
+      return res.status(401).json({
+        error: "Invalid email/mobile or password",
+      });
+    }
 
     // Reject login while the account is locked.
     if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -227,10 +240,14 @@ return res.status(401).json({
   outcome: "SUCCESS",
 });
 
-    await sendOtp(user.email);
+    const otpResult = await sendOtp(user.email, "LOGIN", user.mobile);
 
     return res.status(200).json({
-      message: "OTP sent to your registered email",
+      message: "OTP sent to your registered mobile and email",
+      mobile: user.mobile ? `+91 ${user.mobile.slice(0, 2)}****${user.mobile.slice(-4)}` : undefined,
+      email: user.email,
+      otp: otpResult?.otp,
+      expiresAt: otpResult?.expiresAt,
     });
   } catch (error) {
     console.error("Login error:", error.message);
@@ -244,21 +261,34 @@ return res.status(401).json({
 // Step 2: Verify OTP and issue login token
 router.post("/verify-otp", async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, mobile, identifier, otp } = req.body;
+    const verifyTarget = email || identifier || mobile;
 
-    if (!email || !otp) {
+    if (!verifyTarget || !otp) {
       return res.status(400).json({
-        error: "Email and OTP are required",
+        error: "Email/Mobile and OTP are required",
       });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedTarget = verifyTarget.trim().toLowerCase();
 
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    let user = null;
+    if (normalizedTarget.includes("@")) {
+      user = await prisma.user.findUnique({
+        where: { email: normalizedTarget },
+      });
+    } else {
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { mobile: verifyTarget.trim() },
+            { email: normalizedTarget },
+          ],
+        },
+      });
+    }
 
-    if (!user || !verifyOtp(normalizedEmail, otp)) {
+    if (!user || !verifyOtp(user.email, otp, "LOGIN")) {
   await auditLogger.recordAuditLog({
     userId: user?.id ?? null,
     event: "OTP_VERIFICATION",

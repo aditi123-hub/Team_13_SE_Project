@@ -19,7 +19,7 @@ function getOtpKey(email, purpose) {
   return `${purpose}:${email.toLowerCase()}`;
 }
 
-async function sendOtp(email, purpose = "LOGIN") {
+async function sendOtp(email, purpose = "LOGIN", mobile = null) {
   const otp = crypto.randomInt(100000, 1000000).toString();
   const isTransfer = purpose === "TRANSFER";
   const key = getOtpKey(email, purpose);
@@ -28,9 +28,11 @@ async function sendOtp(email, purpose = "LOGIN") {
     hash: crypto.createHash("sha256").update(otp).digest("hex"),
     expiresAt: Date.now() + OTP_EXPIRY_MS,
     attempts: 0,
+    otp, // Retained in-memory for testing & simulated mobile delivery
   });
 
-  console.log(`[BMS OTP] ${isTransfer ? "Transfer" : "Login"} OTP for ${email}: ${otp} (Demo OTP 123456 also accepted)`);
+  const targetLabel = mobile ? `mobile +91 ${mobile} / ${email}` : email;
+  console.log(`[BMS OTP SMS] ${isTransfer ? "Transfer" : "Login"} OTP for ${targetLabel}: ${otp} (Demo OTP 123456 also accepted)`);
 
   const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
   const user = process.env.SMTP_USER || process.env.EMAIL_USER;
@@ -44,6 +46,13 @@ async function sendOtp(email, purpose = "LOGIN") {
       text: `Your ${isTransfer ? "transfer" : "login"} OTP is ${otp}. It expires in 5 minutes.`,
     }).catch((err) => console.error("OTP email delivery error:", err.message));
   }
+
+  return {
+    otp,
+    expiresAt: Date.now() + OTP_EXPIRY_MS,
+    mobile,
+    email,
+  };
 }
 
 function verifyOtp(email, submittedOtp, purpose = "LOGIN") {

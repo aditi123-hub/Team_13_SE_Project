@@ -8,6 +8,7 @@ const collection = JSON.parse(fs.readFileSync(collectionPath, "utf8"));
 
 const serverProcess = spawn("node", ["src/server.js"], {
   cwd: path.resolve(__dirname, ".."),
+  env: { ...process.env, ENABLE_HTTPS: "true" },
   stdio: "ignore",
 });
 

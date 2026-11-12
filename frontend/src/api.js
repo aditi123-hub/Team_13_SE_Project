@@ -27,6 +27,26 @@ async function request(endpoint, options = {}, role = "Customer") {
 }
 
 export const api = {
+  login: (identifier, password) =>
+    request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: identifier,
+        identifier: identifier,
+        password,
+      }),
+    }),
+
+  verifyLoginOtp: (identifier, otp) =>
+    request("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({
+        email: identifier,
+        identifier: identifier,
+        otp: String(otp).trim(),
+      }),
+    }),
+
   deposit: (accountId, amount) =>
     request(`/accounts/${accountId}/deposit`, {
       method: "POST",

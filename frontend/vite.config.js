@@ -7,6 +7,16 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      '/auth': {
+        target: 'https://localhost:3443',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/kyc': {
+        target: 'https://localhost:3443',
+        changeOrigin: true,
+        secure: false,
+      },
       '/accounts': {
         target: 'https://localhost:3443',
         changeOrigin: true,
