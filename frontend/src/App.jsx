@@ -166,7 +166,7 @@ const roles = {
       { label: "Savings Account", number: "•••• 1001", id: 1, balance: 50000.0, type: "SAVINGS" },
       { label: "Current Account", number: "•••• 1002", id: 2, balance: 15000.0, type: "CURRENT" },
     ],
-    actions: ["Overview", "Deposit & Withdraw", "Transfer & OTP", "Apply for Loan", "📱 Mobile 2FA Login", "🛡️ Solved Issues (14/14)", "Transaction history"],
+    actions: ["Overview", "Deposit & Withdraw", "Transfer & OTP", "Apply for Loan", "Mobile 2FA Login", "Solved Issues Registry (14/14)", "Transaction history"],
   },
   Teller: {
     subtitle: "Customer service and branch cash operations.",
@@ -174,7 +174,7 @@ const roles = {
       { label: "Branch Cash Vault", number: "VAULT-01", id: 1, balance: 250000.0, type: "RESERVE" },
       { label: "Teller Counter Daily", number: "COUNTER-01", id: 2, balance: 18, type: "ACTIVITY" },
     ],
-    actions: ["Overview", "Quick Deposit", "Receipt Lookup", "📱 Mobile 2FA Login", "🛡️ Solved Issues (14/14)", "Customer lookup"],
+    actions: ["Overview", "Quick Deposit", "Receipt Lookup", "Mobile 2FA Login", "Solved Issues Registry (14/14)", "Customer lookup"],
   },
   Manager: {
     subtitle: "Monitor branch activity, credit decisions, and performance.",
@@ -182,7 +182,7 @@ const roles = {
       { label: "Total Branch Deposits", number: "PORTFOLIO", id: 1, balance: 842000.0, type: "PORTFOLIO" },
       { label: "Pending Approvals", number: "CREDIT-QUEUE", id: 2, balance: 2, type: "QUEUE" },
     ],
-    actions: ["Overview", "Review approvals", "Branch overview", "View reports", "🛡️ Solved Issues (14/14)"],
+    actions: ["Overview", "Review approvals", "Branch overview", "View reports", "Solved Issues Registry (14/14)"],
   },
   Admin: {
     subtitle: "Manage system operations, staff roles, and audit security.",
@@ -190,7 +190,7 @@ const roles = {
       { label: "Registered users", number: "USER-REGISTRY", id: 1, balance: 4, type: "REGISTRY" },
       { label: "Audit Chain Records", number: "SHA-256 LINK", id: 2, balance: 24, type: "CRYPTOGRAPHIC" },
     ],
-    actions: ["Overview", "User management", "Role management", "Audit log integrity", "🛡️ Solved Issues (14/14)"],
+    actions: ["Overview", "User management", "Role management", "Audit log integrity", "Solved Issues Registry (14/14)"],
   },
 };
 
@@ -427,7 +427,7 @@ function App() {
     if (res?.ok || res?.status === 200) {
       setFast2smsConfigured(true);
       setShowKeyModal(false);
-      setNotice("✓ Fast2SMS API Key successfully configured! Real cellular SMS OTPs are active.");
+      setNotice("Fast2SMS API Key successfully configured. Real cellular SMS gateway is active.");
     } else {
       setLoginError("Failed to save Fast2SMS key. Check backend.");
     }
@@ -505,7 +505,7 @@ function App() {
         email: userObj?.email || (loginMethod === "PHONE" ? `${loginPhone}@bank.com` : loginIdentifier),
         role: userRole,
       });
-      setNotice(`✓ Mobile 2FA Authenticated! Welcome to Bankwise ${userRole} Workspace.`);
+      setNotice(`Mobile 2FA Authenticated. Welcome to Bankwise ${userRole} Workspace.`);
       setTimeout(() => {
         setViewMode("DASHBOARD");
         setLoginModalOpen(false);
@@ -591,7 +591,7 @@ function App() {
         role: userRole,
       });
 
-      setNotice(`✓ Account successfully created with role ${userRole}! Welcome to Bankwise.`);
+      setNotice(`Account successfully created with role ${userRole}. Welcome to Bankwise.`);
       setAuthView("LOGIN");
       setLoginStage("VERIFIED");
       setTimeout(() => {
@@ -842,14 +842,14 @@ function App() {
       {incomingSms && (
         <div className="incoming-sms-banner" role="alert">
           <div className="sms-banner-header">
-            <span className="sms-sender">💬 SMS Gateway · {incomingSms.mobile}</span>
+            <span className="sms-sender">SMS GATEWAY · {incomingSms.mobile}</span>
             <button
               type="button"
               className="sms-dismiss-btn"
               onClick={() => setIncomingSms(null)}
               aria-label="Dismiss SMS"
             >
-              ✕
+              ×
             </button>
           </div>
           <p className="sms-body">
@@ -861,13 +861,13 @@ function App() {
               className="sms-copy-btn"
               onClick={() => copyToClipboard(incomingSms.otp)}
             >
-              {copiedRef === incomingSms.otp ? "✓ Copied" : "Copy OTP"}
+              {copiedRef === incomingSms.otp ? "Copied" : "Copy OTP"}
             </button>
             <button
               type="button"
               className="sms-fill-btn"
               onClick={() => {
-                if (loginModalOpen || activeSection === "📱 Mobile 2FA Login") {
+                if (loginModalOpen || activeSection === "Mobile 2FA Login") {
                   handleAutoFillLoginOtp(incomingSms.otp);
                 }
                 if (transferStage === "OTP_REQUIRED") {
@@ -875,7 +875,7 @@ function App() {
                 }
               }}
             >
-              ⚡ Auto-Fill ({incomingSms.otp})
+              Auto-Fill ({incomingSms.otp})
             </button>
           </div>
         </div>
@@ -887,7 +887,7 @@ function App() {
           <div className="modal-window" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">
-                <span>📱 Customer Mobile 2FA Login</span>
+                <span>Customer Mobile 2FA Login</span>
               </h3>
               <button
                 type="button"
@@ -895,7 +895,7 @@ function App() {
                 onClick={() => setLoginModalOpen(false)}
                 aria-label="Close login dialog"
               >
-                ✕
+                ×
               </button>
             </div>
 
@@ -967,7 +967,7 @@ function App() {
                     SMS delivered to: <strong>{incomingSms?.mobile || "+91 " + loginIdentifier}</strong>
                   </span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#10b981" }}>
-                    ⏱ {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
+                    Expires in: {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
                   </span>
                 </div>
 
@@ -1022,7 +1022,7 @@ function App() {
 
             {loginStage === "VERIFIED" && (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <div style={{ fontSize: 42, marginBottom: 8, color: "#10b981" }}>✓</div>
+                <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 8, color: "#10b981" }}>SUCCESS</div>
                 <h4 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800 }}>Mobile 2FA Verified</h4>
                 <p style={{ fontSize: 13, color: "#71717a", margin: 0 }}>
                   Cryptographic session established for {authenticatedUser.name}.
@@ -1055,7 +1055,7 @@ function App() {
                 onClick={() => setShowKeyModal((v) => !v)}
                 title="Configure Fast2SMS Gateway Key"
               >
-                <span>{fast2smsConfigured ? "✓ Fast2SMS Active" : "⚙️ Fast2SMS API Key"}</span>
+                <span>{fast2smsConfigured ? "Fast2SMS Gateway: Connected" : "Fast2SMS Gateway: Configure Key"}</span>
               </button>
             </div>
 
@@ -1115,7 +1115,7 @@ function App() {
                           setLoginError("");
                         }}
                       >
-                        📱 Mobile & OTP
+                        Mobile Number & OTP
                       </button>
                       <button
                         type="button"
@@ -1125,7 +1125,7 @@ function App() {
                           setLoginError("");
                         }}
                       >
-                        🔑 Net Banking
+                        Net Banking
                       </button>
                     </div>
 
@@ -1135,7 +1135,7 @@ function App() {
                           Phone number
                         </label>
                         <div className="phone-input-wrap">
-                          <span className="phone-prefix">🇮🇳 +91</span>
+                          <span className="phone-prefix">+91</span>
                           <input
                             id="login-mobile-number"
                             type="tel"
@@ -1204,7 +1204,7 @@ function App() {
                         SMS delivered to: <strong>{incomingSms?.mobile || (loginMethod === "PHONE" ? "+91 " + loginPhone : "+91 " + loginIdentifier)}</strong>
                       </span>
                       <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>
-                        ⏱ {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
+                        Expires in: {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
                       </span>
                     </div>
 
@@ -1317,7 +1317,7 @@ function App() {
                         Phone number
                       </label>
                       <div className="phone-input-wrap">
-                        <span className="phone-prefix">🇮🇳 +91</span>
+                        <span className="phone-prefix">+91</span>
                         <input
                           id="reg-phone"
                           type="tel"
@@ -1383,7 +1383,7 @@ function App() {
                         Fast2SMS delivered to: <strong>+91 {regPhone}</strong>
                       </span>
                       <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>
-                        ⏱ {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
+                        Expires in: {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
                       </span>
                     </div>
 
@@ -1499,7 +1499,7 @@ function App() {
               className="topbar-action-pill highlight"
               onClick={() => setViewMode("DASHBOARD")}
             >
-              Direct to Dashboard ➔
+              Direct to Dashboard →
             </button>
           </div>
         </div>
@@ -1524,15 +1524,15 @@ function App() {
                   setLoginStage("CREDENTIALS");
                 }}
               >
-                🚪 Sign Out / Login Page
+                Sign Out / Login Page
               </button>
 
               <button
                 className="topbar-action-pill highlight"
                 type="button"
-                onClick={() => selectSection("🛡️ Solved Issues (14/14)")}
+                onClick={() => selectSection("Solved Issues Registry (14/14)")}
               >
-                🛡️ 14 Issues Solved
+                14 Issues Solved
               </button>
 
               <button
@@ -1575,7 +1575,7 @@ function App() {
         >
           <p className="nav-label">WORKSPACE</p>
           <nav>
-            {["Overview", ...data.actions.filter((a) => a !== "Overview")].map((section, index) => (
+            {["Overview", ...data.actions.filter((a) => a !== "Overview")].map((section) => (
               <button
                 type="button"
                 key={section}
@@ -1584,7 +1584,7 @@ function App() {
                 onClick={() => selectSection(section)}
               >
                 <span className="nav-symbol" aria-hidden="true">
-                  {["⌂", "▣", "↗", "◎", "⚙"][index % 5]}
+                  •
                 </span>
                 {section}
               </button>
@@ -1605,7 +1605,7 @@ function App() {
               aria-controls="mobile-navigation"
               onClick={() => setMenuOpen((current) => !current)}
             >
-              {menuOpen ? "Close menu" : "☰ Menu"}
+              {menuOpen ? "Close menu" : "Menu"}
             </button>
           </div>
 
@@ -1785,7 +1785,7 @@ function App() {
                         className="copy-pill"
                         onClick={() => copyToClipboard(depositReceipt.reference)}
                       >
-                        {copiedRef === depositReceipt.reference ? "✓ Copied" : "Copy"}
+                        {copiedRef === depositReceipt.reference ? "Copied" : "Copy"}
                       </button>
                       <span>• Amount: +₹{depositReceipt.amount.toLocaleString()}</span>
                     </div>
@@ -1852,7 +1852,7 @@ function App() {
                           className="copy-pill"
                           onClick={() => copyToClipboard(withdrawReceipt.reference)}
                         >
-                          {copiedRef === withdrawReceipt.reference ? "✓ Copied" : "Copy"}
+                          {copiedRef === withdrawReceipt.reference ? "Copied" : "Copy"}
                         </button>
                         <span>• Amount: -₹{withdrawReceipt.amount.toLocaleString()}</span>
                       </div>
@@ -1980,7 +1980,7 @@ function App() {
                         className="copy-pill"
                         onClick={() => copyToClipboard(transferReceipt.reference)}
                       >
-                        {copiedRef === transferReceipt.reference ? "✓ Copied" : "Copy"}
+                        {copiedRef === transferReceipt.reference ? "Copied" : "Copy"}
                       </button>
                       <span>• ₹{transferReceipt.amount.toLocaleString()} transferred atomically</span>
                     </div>
@@ -2282,19 +2282,19 @@ function App() {
                   <div className="audit-block-hash">PREV: 000000000000...</div>
                   <div className="audit-block-hash">HASH: e3b0c44298fc...</div>
                 </div>
-                <span className="audit-chain-arrow">➔</span>
+                <span className="audit-chain-arrow">→</span>
                 <div className="audit-block verified">
                   <div className="audit-block-title">Block #1 (KYC)</div>
                   <div className="audit-block-hash">USER: 3 • OUTCOME: OK</div>
                   <div className="audit-block-hash">HASH: 4aadc058e112...</div>
                 </div>
-                <span className="audit-chain-arrow">➔</span>
+                <span className="audit-chain-arrow">→</span>
                 <div className="audit-block verified">
                   <div className="audit-block-title">Block #2 (DEPOSIT)</div>
                   <div className="audit-block-hash">REF: DEP-INIT-001</div>
                   <div className="audit-block-hash">HASH: 7bc901a8ef34...</div>
                 </div>
-                <span className="audit-chain-arrow">➔</span>
+                <span className="audit-chain-arrow">→</span>
                 <div className="audit-block verified">
                   <div className="audit-block-title">Block #3 (TRANSFER)</div>
                   <div className="audit-block-hash">2FA OTP: VERIFIED</div>
@@ -2364,7 +2364,7 @@ function App() {
                       className="copy-pill"
                       onClick={() => copyToClipboard(fetchedReceipt.reference)}
                     >
-                      {copiedRef === fetchedReceipt.reference ? "✓ Copied" : "Copy"}
+                      {copiedRef === fetchedReceipt.reference ? "Copied" : "Copy"}
                     </button>
                     <span>• Type: {fetchedReceipt.name} • Amount: {fetchedReceipt.amount}</span>
                   </div>
@@ -2374,7 +2374,7 @@ function App() {
           )}
 
           {/* 8. Dedicated Mobile 2FA Login Workbench View (BMS-SR-003) */}
-          {activeSection === "📱 Mobile 2FA Login" && (
+          {activeSection === "Mobile 2FA Login" && (
             <div className="interactive-panel-grid" style={{ marginBottom: 28 }}>
               <div className="action-card">
                 <div className="action-card-header">
@@ -2446,7 +2446,7 @@ function App() {
                         SMS dispatched to: <strong>{incomingSms?.mobile || "+91 " + loginIdentifier}</strong>
                       </span>
                       <span style={{ fontSize: 12, fontWeight: 700, color: "#10b981" }}>
-                        ⏱ {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
+                        Expires in: {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
                       </span>
                     </div>
 
@@ -2543,7 +2543,7 @@ function App() {
           )}
 
           {/* 9. Solved Issues Registry (14/14 Solved & Merged) */}
-          {activeSection === "🛡️ Solved Issues (14/14)" && (
+          {activeSection === "Solved Issues (14/14)" && (
             <div className="issues-hub">
               {/* Grand Verified Header Banner */}
               <div className="issues-header-banner">
@@ -2593,7 +2593,7 @@ function App() {
                 <div className="action-callout" style={{ padding: 18 }}>
                   <div className="action-callout-header">
                     <span style={{ fontSize: 13, color: "#10b981", fontWeight: 800 }}>
-                      ⚡ BMS-NFR-001 BENCHMARK RESULT: {benchmarkMetrics.latencyMs}ms AVERAGE LATENCY
+                      BMS-NFR-001 BENCHMARK RESULT: {benchmarkMetrics.latencyMs}ms AVERAGE LATENCY
                     </span>
                     <span className="transaction-type credit">{benchmarkMetrics.sla}</span>
                   </div>
@@ -2609,7 +2609,7 @@ function App() {
                 <div className="action-callout" style={{ padding: 18 }}>
                   <div className="action-callout-header">
                     <span style={{ fontSize: 13, color: "#09090b", fontWeight: 800 }}>
-                      📊 BMS-F-020 PERIODIC REPORT API RESPONSE (JSON)
+                      BMS-F-020 PERIODIC REPORT API RESPONSE (JSON)
                     </span>
                     <span className="transaction-type debit">HTTP 200 OK</span>
                   </div>
@@ -2628,7 +2628,7 @@ function App() {
                       <div>
                         <div className="issue-card-top">
                           <span className="issue-id-tag">{item.id} · {item.req}</span>
-                          <span className="issue-status-badge">✓ {item.status}</span>
+                          <span className="issue-status-badge">{item.status}</span>
                         </div>
                         <h4 className="issue-title" style={{ marginTop: 10 }}>{item.title}</h4>
                         <p className="issue-desc" style={{ marginTop: 6 }}>{item.description}</p>
@@ -2696,7 +2696,7 @@ function App() {
                         >
                           {transaction.reference || "INIT"}
                           <span style={{ fontSize: 9, opacity: 0.7 }}>
-                            {copiedRef === transaction.reference ? "✓" : "📋"}
+                            {copiedRef === transaction.reference ? "Copied" : "Copy"}
                           </span>
                         </button>
                       </td>
