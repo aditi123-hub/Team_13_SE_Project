@@ -61,6 +61,9 @@ async function sendRealSms(mobile, otp, purpose = "LOGIN") {
         res.on("data", (c) => (body += c));
         res.on("end", () => {
           console.log(`[Fast2SMS Gateway] Response for +91 ${cleanMobile}: Status ${res.statusCode} -> ${body}`);
+          if (body.includes('"status_code":996')) {
+            console.log(`[Fast2SMS Notice] Complete website verification in Fast2SMS panel (under 'OTP Message' / 'Dev API' -> KYC) to unlock cellular delivery to Indian mobile handsets.`);
+          }
           // If OTP route failed, try quick SMS route as fallback
           if (res.statusCode !== 200 || body.includes('"status_code":4') || body.includes('"status_code":5')) {
             const fallbackData = JSON.stringify({

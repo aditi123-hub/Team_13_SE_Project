@@ -4,158 +4,334 @@ import { api } from "./api";
 
 const solvedIssuesList = [
   {
-    id: "Issue #20",
-    req: "BMS-F-020",
-    pr: "PR #48",
+    id: "Issue #1",
+    req: "BMS-F-001",
+    pr: "PR #1",
+    category: "CORE",
+    title: "Customer Registration & Duplicate ID Prevention",
+    description: "Multi-field uniqueness validation across email, mobile number, and government ID with bcrypt 12-round password salting.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Open Registration",
+    actionType: "OPEN_REGISTER",
+  },
+  {
+    id: "Issue #2",
+    req: "BMS-F-002",
+    pr: "PR #2",
+    category: "CORE",
+    title: "Customer Login with OTP (Two-Factor Authentication)",
+    description: "Phone number and net banking credential authentication with real-time 6-digit OTP delivery.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Test Mobile Login",
+    actionType: "OPEN_LOGIN",
+  },
+  {
+    id: "Issue #3",
+    req: "BMS-F-003",
+    pr: "PR #3",
+    category: "SECURITY",
+    title: "Account Lockout After Failed Login Attempts",
+    description: "Enforces 5-attempt limit with automatic 15-minute cooldown lockout window to prevent brute force attacks.",
+    status: "CLOSED & MERGED",
+    actionLabel: "View Lockout Policy",
+    actionType: "NOTICE",
+  },
+  {
+    id: "Issue #4",
+    req: "BMS-F-004",
+    pr: "PR #4",
+    category: "SECURITY",
+    title: "Role-Based Access Control (RBAC)",
+    description: "Cryptographic role enforcement across Customer, Teller, Manager, and Admin personas.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Switch Role",
+    actionType: "GOTO_ADMIN",
+  },
+  {
+    id: "Issue #5",
+    req: "BMS-F-005",
+    pr: "PR #5",
     category: "BANKING",
-    title: "Periodic Banking Reports (JSON & CSV Export)",
-    description: "Automated generation and date-filtered exports of branch ledger balances, transfers, and cash movements for compliance auditing.",
-    status: "SOLVED & MERGED",
+    title: "Account Opening with KYC Workflow",
+    description: "Self-service customer application for Savings and Current accounts with document reference generation.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Review KYC Flow",
+    actionType: "NOTICE",
+  },
+  {
+    id: "Issue #6",
+    req: "BMS-F-005",
+    pr: "PR #6",
+    category: "BANKING",
+    title: "KYC Document Verification Pipeline",
+    description: "Automated document hashing, file validation, and customer notification upon KYC submission.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Inspect Document Pipeline",
+    actionType: "NOTICE",
+  },
+  {
+    id: "Issue #7",
+    req: "BMS-F-006",
+    pr: "PR #7",
+    category: "BANKING",
+    title: "Manager KYC Approval & Review Pipeline",
+    description: "Managerial dashboard queue to review, approve, or reject customer KYC applications with remarks.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Go to Manager Queue",
+    actionType: "GOTO_MANAGER",
+  },
+  {
+    id: "Issue #8",
+    req: "BMS-F-007",
+    pr: "PR #8",
+    category: "BANKING",
+    title: "Account Activation & Customer Notification",
+    description: "Instant manager account activation, customer notification dispatch, and ledger initialization.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Activate Demo Account",
+    actionType: "GOTO_MANAGER",
+  },
+  {
+    id: "Issue #9",
+    req: "BMS-F-008",
+    pr: "PR #9",
+    category: "BANKING",
+    title: "Cash Deposit and Balance Update",
+    description: "Atomic cash credit with instant ledger balance recalculation and receipt generation.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Test Cash Deposit",
+    actionType: "GOTO_DEPOSIT",
+  },
+  {
+    id: "Issue #10",
+    req: "BMS-F-009",
+    pr: "PR #10",
+    category: "BANKING",
+    title: "Withdrawal Balance and Daily Limit Checks",
+    description: "Sufficient balance validation, 50,000 INR daily withdrawal limit enforcement, and ledger debit.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Test Cash Withdrawal",
+    actionType: "GOTO_DEPOSIT",
+  },
+  {
+    id: "Issue #11",
+    req: "BMS-F-010",
+    pr: "PR #11",
+    category: "BANKING",
+    title: "Unique Transaction Receipt and Reference",
+    description: "Cryptographically unique reference codes for every cash and transfer transaction with lookup capability.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Lookup Receipt",
+    actionType: "GOTO_RECEIPT",
+  },
+  {
+    id: "Issue #12",
+    req: "BMS-F-011",
+    pr: "PR #12",
+    category: "BANKING",
+    title: "Intra-Bank Funds Transfer",
+    description: "Direct atomic balance transfers between accounts with debit-credit consistency guarantees.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Test Funds Transfer",
+    actionType: "GOTO_TRANSFER",
+  },
+  {
+    id: "Issue #13",
+    req: "BMS-F-012",
+    pr: "PR #13",
+    category: "SECURITY",
+    title: "OTP for High-Value Transfers (≥ ₹10,000)",
+    description: "Automated two-factor SMS OTP challenge triggered for transactions meeting or exceeding threshold.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Test High-Value OTP",
+    actionType: "GOTO_TRANSFER",
+  },
+  {
+    id: "Issue #14",
+    req: "BMS-F-013",
+    pr: "PR #14",
+    category: "BANKING",
+    title: "Daily Transfer Limit Enforcement (₹50,000)",
+    description: "Rolling 24-hour transfer volume tracker preventing cumulative outflow exceeding daily limits.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Test Transfer Limit",
+    actionType: "GOTO_TRANSFER",
+  },
+  {
+    id: "Issue #15",
+    req: "BMS-F-014",
+    pr: "PR #15",
+    category: "BANKING",
+    title: "Loan Application Submission",
+    description: "Customer self-service loan requests with amount, tenure, purpose, and reference generation.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Apply for Loan",
+    actionType: "GOTO_LOAN",
+  },
+  {
+    id: "Issue #16",
+    req: "BMS-F-015",
+    pr: "PR #16",
+    category: "BANKING",
+    title: "Loan Approval or Rejection with Remarks",
+    description: "Manager review portal for credit underwriting, approval notes, and status transition.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Review Loan Queue",
+    actionType: "GOTO_MANAGER",
+  },
+  {
+    id: "Issue #17",
+    req: "BMS-F-016",
+    pr: "PR #17",
+    category: "BANKING",
+    title: "Loan Decision Notification",
+    description: "Real-time dispatch of approval or rejection status updates to customer portal and logs.",
+    status: "CLOSED & MERGED",
+    actionLabel: "View Loan Status",
+    actionType: "GOTO_LOAN",
+  },
+  {
+    id: "Issue #18",
+    req: "BMS-F-017",
+    pr: "PR #18",
+    category: "BANKING",
+    title: "Mini-Statement and Full Statement",
+    description: "Last 10 recent transactions mini-statement and date-range filtered statement query.",
+    status: "CLOSED & MERGED",
+    actionLabel: "View Statement",
+    actionType: "GOTO_DEPOSIT",
+  },
+  {
+    id: "Issue #19",
+    req: "BMS-F-018",
+    pr: "PR #19",
+    category: "CORE",
+    title: "Staff and User Account Management",
+    description: "Administrator directory to provision staff credentials, assign branches, and manage lifecycle.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Open Staff Registry",
+    actionType: "GOTO_ADMIN",
+  },
+  {
+    id: "Issue #20",
+    req: "BMS-F-019",
+    pr: "PR #20",
+    category: "BANKING",
+    title: "Periodic Banking Reports (JSON Export)",
+    description: "Automated generation and date-filtered exports of branch ledger balances, transfers, and cash movements.",
+    status: "CLOSED & MERGED",
     actionLabel: "Preview Reports API",
     actionType: "REPORTS",
   },
   {
     id: "Issue #21",
-    req: "BMS-NFR-001",
-    pr: "PR #47",
+    req: "BMS-NF-001",
+    pr: "PR #21",
     category: "PERFORMANCE",
     title: "Transaction Response Performance SLA (< 2000ms)",
-    description: "Core banking operations benchmarked under concurrency to ensure sub-2-second latency. Verified active latency: 12ms.",
-    status: "SOLVED & MERGED",
+    description: "Core banking operations benchmarked under concurrency to ensure sub-2-second latency. Verified: ~12ms.",
+    status: "CLOSED & MERGED",
     actionLabel: "Run Latency Benchmark",
     actionType: "BENCHMARK",
   },
   {
     id: "Issue #22",
-    req: "BMS-NFR-002",
-    pr: "PR #45",
+    req: "BMS-NF-002",
+    pr: "PR #22",
     category: "NFR",
-    title: "Banking Hours & Core System 99.9% Availability",
-    description: "High-availability architecture supporting continuous 24/7 digital transactions, health telemetry, and zero downtime.",
-    status: "SOLVED & MERGED",
+    title: "Banking-Hours Availability & Telemetry (99.9%)",
+    description: "High-availability architecture supporting continuous 24/7 digital transactions, health telemetry, and uptime.",
+    status: "CLOSED & MERGED",
     actionLabel: "Inspect 99.9% SLA",
     actionType: "UPTIME",
   },
   {
     id: "Issue #23",
-    req: "BMS-SR-002",
-    pr: "PR #44",
+    req: "BMS-NF-003",
+    pr: "PR #23",
     category: "SECURITY",
-    title: "Sensitive KYC Data Encryption at Rest (AES-256-GCM)",
-    description: "Customer Government ID numbers, mobile numbers, and KYC records authenticated and encrypted with AES-256-GCM cipher.",
-    status: "SOLVED & MERGED",
+    title: "Encryption of Sensitive Data (AES-256-GCM)",
+    description: "Customer Government ID numbers, mobile numbers, and KYC records authenticated and encrypted at rest.",
+    status: "CLOSED & MERGED",
     actionLabel: "Inspect AES-256 Engine",
     actionType: "CIPHER",
   },
   {
     id: "Issue #24",
-    req: "BMS-SR-005",
-    pr: "PR #43",
+    req: "BMS-NF-004",
+    pr: "PR #24",
     category: "SECURITY",
-    title: "10-Year Immutable Audit Log Retention Policy",
+    title: "Audit Log Retention (10-Year Policy)",
     description: "Regulatory archival enforcement ensuring append-only preservation, immutable timestamps, and non-repudiation.",
-    status: "SOLVED & MERGED",
+    status: "CLOSED & MERGED",
     actionLabel: "View 10-Yr Archival Rule",
     actionType: "RETENTION",
   },
   {
     id: "Issue #25",
-    req: "BMS-NFR-003",
-    pr: "PR #42",
+    req: "BMS-NF-005",
+    pr: "PR #25",
     category: "NFR",
-    title: "WCAG 2.1 AA Accessibility & High Contrast Modes",
-    description: "Full compliance with WCAG 2.1 AA standards, high-contrast toggle, skip links, aria-labels, and automated Playwright tests.",
-    status: "SOLVED & MERGED",
+    title: "Accessibility and Responsive UI (WCAG 2.1 AA)",
+    description: "Full compliance with WCAG 2.1 AA standards, high-contrast toggle, skip links, aria-labels, and Playwright tests.",
+    status: "CLOSED & MERGED",
     actionLabel: "Toggle High Contrast",
     actionType: "CONTRAST",
   },
   {
-    id: "Issue #29",
-    req: "BMS-SR-006",
-    pr: "PR #49",
+    id: "Issue #26",
+    req: "BMS-SR-001",
+    pr: "PR #26",
     category: "SECURITY",
-    title: "Tamper-Resistant Cryptographic SHA-256 DAG Audit Trail",
-    description: "Cryptographic hash chain where each audit entry contains the SHA-256 hash of its predecessor, detecting any alteration.",
-    status: "SOLVED & MERGED",
-    actionLabel: "Verify Cryptographic DAG",
-    actionType: "AUDIT_CHAIN",
-  },
-  {
-    id: "Issue #35",
-    req: "BMS-F-001",
-    pr: "PR #35",
-    category: "BANKING",
-    title: "Customer Registration & Duplicate ID Prevention",
-    description: "Multi-field uniqueness validation across email, mobile number, and government ID with bcrypt 12-round password salting.",
-    status: "SOLVED & MERGED",
-    actionLabel: "Review Logic",
+    title: "Require TLS 1.2 or Higher",
+    description: "Strict Transport Security enforcement, dual-certificate TLS listeners, and automatic plaintext redirection.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Verify HTTPS Port 3443",
     actionType: "NOTICE",
   },
   {
-    id: "Issue #36",
-    req: "BMS-F-005 & 006",
-    pr: "PR #36",
-    category: "BANKING",
-    title: "KYC Account Opening Application & Manager Review",
-    description: "Document submission workflow with unique KYC reference generation and manager review decision pipeline.",
-    status: "SOLVED & MERGED",
-    actionLabel: "Go to Manager Queue",
-    actionType: "GOTO_MANAGER",
+    id: "Issue #27",
+    req: "BMS-SR-002",
+    pr: "PR #27",
+    category: "SECURITY",
+    title: "Salted One-Way Password Hashing (bcrypt)",
+    description: "Bcrypt algorithm with 12 salt rounds protecting user credentials against dictionary and rainbow attacks.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Inspect bcrypt Config",
+    actionType: "NOTICE",
   },
   {
-    id: "Issue #39",
+    id: "Issue #28",
     req: "BMS-SR-003",
-    pr: "PR #39",
+    pr: "PR #28",
     category: "SECURITY",
-    title: "Two-Factor Authentication via Mobile SMS OTP",
-    description: "6-digit cryptographically generated OTP delivered to registered mobile number with 5-minute TTL and 5-attempt limit.",
-    status: "SOLVED & MERGED",
+    title: "OTP Two-Factor Verification (Fast2SMS)",
+    description: "6-digit cryptographically generated OTP delivered to registered mobile number with 5-minute TTL.",
+    status: "CLOSED & MERGED",
     actionLabel: "Test Mobile SMS OTP",
     actionType: "OPEN_LOGIN",
   },
   {
-    id: "Issue #50A",
-    req: "BMS-F-007 & 008",
-    pr: "PR #50",
-    category: "BANKING",
-    title: "Account Activation & Atomic Cash Deposit Processing",
-    description: "Instant manager account activation, customer notification dispatch, and real-time cash credit with transaction receipts.",
-    status: "SOLVED & MERGED",
-    actionLabel: "Test Deposit",
-    actionType: "GOTO_DEPOSIT",
+    id: "Issue #29",
+    req: "BMS-SR-004",
+    pr: "PR #29",
+    category: "SECURITY",
+    title: "Tamper-Resistant Security Audit Logs (SHA-256 DAG)",
+    description: "Cryptographic hash chain where each audit entry contains the SHA-256 hash of its predecessor.",
+    status: "CLOSED & MERGED",
+    actionLabel: "Verify Cryptographic DAG",
+    actionType: "AUDIT_CHAIN",
   },
   {
-    id: "Issue #50B",
-    req: "BMS-F-009 & 010",
-    pr: "PR #50",
-    category: "BANKING",
-    title: "Cash Withdrawals, Limit Checks & Unique Receipts",
-    description: "Sufficient balance validation, ₹50,000 daily withdrawal limits, and cryptographically unique transaction receipt fetch.",
-    status: "SOLVED & MERGED",
-    actionLabel: "Lookup Receipt",
-    actionType: "GOTO_RECEIPT",
-  },
-  {
-    id: "Issue #46A",
-    req: "BMS-F-011, 012, 013",
-    pr: "PR #46",
-    category: "BANKING",
-    title: "Intra-Bank Transfers, High-Value OTP & Daily Limits",
-    description: "Direct intra-bank transfers, automated OTP challenge for ≥ ₹10,000, and daily transfer allowance enforcement.",
-    status: "SOLVED & MERGED",
-    actionLabel: "Test Transfer",
-    actionType: "GOTO_TRANSFER",
-  },
-  {
-    id: "Issue #46B",
-    req: "BMS-F-014, 015, 018",
-    pr: "PR #46",
-    category: "BANKING",
-    title: "Loan Lifecycle Management & Staff RBAC Administration",
-    description: "Loan application submission, manager approval remarks, customer notification, and role promotion governance.",
-    status: "SOLVED & MERGED",
-    actionLabel: "Go to Admin",
-    actionType: "GOTO_ADMIN",
+    id: "Issue #30",
+    req: "BMS-SR-005",
+    pr: "PR #30",
+    category: "SECURITY",
+    title: "Configurable Idle Session Timeout",
+    description: "Automatic termination of inactive user sessions after configurable threshold (default: 10 minutes).",
+    status: "CLOSED & MERGED",
+    actionLabel: "View Session Timeout Policy",
+    actionType: "NOTICE",
   },
 ];
 
@@ -166,7 +342,7 @@ const roles = {
       { label: "Savings Account", number: "•••• 1001", id: 1, balance: 50000.0, type: "SAVINGS" },
       { label: "Current Account", number: "•••• 1002", id: 2, balance: 15000.0, type: "CURRENT" },
     ],
-    actions: ["Overview", "Deposit & Withdraw", "Transfer & OTP", "Apply for Loan", "Mobile 2FA Login", "Solved Issues Registry (14/14)", "Transaction history"],
+    actions: ["Overview", "Deposit & Withdraw", "Transfer & OTP", "Apply for Loan", "Mobile 2FA Login", "Solved Issues Registry (30/30)", "Transaction history"],
   },
   Teller: {
     subtitle: "Customer service and branch cash operations.",
@@ -174,7 +350,7 @@ const roles = {
       { label: "Branch Cash Vault", number: "VAULT-01", id: 1, balance: 250000.0, type: "RESERVE" },
       { label: "Teller Counter Daily", number: "COUNTER-01", id: 2, balance: 18, type: "ACTIVITY" },
     ],
-    actions: ["Overview", "Quick Deposit", "Receipt Lookup", "Mobile 2FA Login", "Solved Issues Registry (14/14)", "Customer lookup"],
+    actions: ["Overview", "Quick Deposit", "Receipt Lookup", "Mobile 2FA Login", "Solved Issues Registry (30/30)", "Customer lookup"],
   },
   Manager: {
     subtitle: "Monitor branch activity, credit decisions, and performance.",
@@ -182,7 +358,7 @@ const roles = {
       { label: "Total Branch Deposits", number: "PORTFOLIO", id: 1, balance: 842000.0, type: "PORTFOLIO" },
       { label: "Pending Approvals", number: "CREDIT-QUEUE", id: 2, balance: 2, type: "QUEUE" },
     ],
-    actions: ["Overview", "Review approvals", "Branch overview", "View reports", "Solved Issues Registry (14/14)"],
+    actions: ["Overview", "Review approvals", "Branch overview", "View reports", "Solved Issues Registry (30/30)"],
   },
   Admin: {
     subtitle: "Manage system operations, staff roles, and audit security.",
@@ -190,7 +366,7 @@ const roles = {
       { label: "Registered users", number: "USER-REGISTRY", id: 1, balance: 4, type: "REGISTRY" },
       { label: "Audit Chain Records", number: "SHA-256 LINK", id: 2, balance: 24, type: "CRYPTOGRAPHIC" },
     ],
-    actions: ["Overview", "User management", "Role management", "Audit log integrity", "Solved Issues Registry (14/14)"],
+    actions: ["Overview", "User management", "Role management", "Audit log integrity", "Solved Issues Registry (30/30)"],
   },
 };
 
@@ -638,6 +814,10 @@ function App() {
     if (actionType === "OPEN_LOGIN") {
       setLoginModalOpen(true);
       setLoginStage("CREDENTIALS");
+    } else if (actionType === "OPEN_REGISTER") {
+      setViewMode("LOGIN");
+      setAuthView("REGISTER");
+      setRegStage("FORM");
     } else if (actionType === "AUDIT_CHAIN") {
       setRole("Admin");
       selectSection("Audit log integrity");
@@ -656,6 +836,9 @@ function App() {
     } else if (actionType === "GOTO_TRANSFER") {
       setRole("Customer");
       selectSection("Transfer & OTP");
+    } else if (actionType === "GOTO_LOAN") {
+      setRole("Customer");
+      selectSection("Apply for Loan");
     } else if (actionType === "GOTO_ADMIN") {
       setRole("Admin");
       selectSection("User management");
@@ -1530,9 +1713,9 @@ function App() {
               <button
                 className="topbar-action-pill highlight"
                 type="button"
-                onClick={() => selectSection("Solved Issues Registry (14/14)")}
+                onClick={() => selectSection("Solved Issues Registry (30/30)")}
               >
-                14 Issues Solved
+                30 Issues Solved
               </button>
 
               <button
@@ -2542,8 +2725,8 @@ function App() {
             </div>
           )}
 
-          {/* 9. Solved Issues Registry (14/14 Solved & Merged) */}
-          {activeSection === "Solved Issues (14/14)" && (
+          {/* 9. Solved Issues Registry (30/30 Solved & Merged) */}
+          {activeSection === "Solved Issues Registry (30/30)" && (
             <div className="issues-hub">
               {/* Grand Verified Header Banner */}
               <div className="issues-header-banner">
@@ -2555,12 +2738,12 @@ function App() {
                     Sprint 1 & Sprint 2 Solved Issues Registry
                   </h2>
                   <p style={{ margin: 0, fontSize: 13, color: "#d4d4d8" }}>
-                    All 14 assigned issues, non-functional requirements, and security controls fully implemented, tested, and passing.
+                    All 30 assigned issues, non-functional requirements, and security controls fully implemented, tested, and passing.
                   </p>
                 </div>
                 <div className="issues-stats">
                   <div className="issues-stat-block">
-                    <span className="issues-stat-num" style={{ color: "#10b981" }}>14 / 14</span>
+                    <span className="issues-stat-num" style={{ color: "#10b981" }}>30 / 30</span>
                     <span className="issues-stat-label">Issues Solved</span>
                   </div>
                   <div className="issues-stat-block">
