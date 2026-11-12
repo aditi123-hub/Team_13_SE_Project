@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node src/server.js",
     "seed:demo": "node scripts/seed-demo-data.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:transfer": "node tests/fundsTransfer.test.js",
+    "test:audit": "node tests/auditChain.test.js",
+    "test:sprint2": "node tests/testAll21.js"
   },
   "keywords": [],
   "author": "",
