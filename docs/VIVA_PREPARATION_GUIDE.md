@@ -50,3 +50,4 @@
    - If a debit succeeds but the credit fails, money is lost. Atomic transactions guarantee ACID properties (all-or-nothing execution).
 4. **Why two-step transfer threshold?**
    - Balances user convenience for low-value payments (< ₹10,000) with strong 2FA security for high-value transactions.
+

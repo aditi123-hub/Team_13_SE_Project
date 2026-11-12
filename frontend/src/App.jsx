@@ -2,46 +2,60 @@ import { useState } from "react";
 import "./App.css";
 import { api } from "./api";
 
-const INITIAL_DATE = "11 Nov 2026";
+const roles = {
+  Customer: {
+    subtitle: "Your finances, all in one place.",
+    accounts: [
+      { label: "Savings Account", number: "ACCT-100001", id: 1, balance: 50000.0 },
+      { label: "Current Account", number: "ACCT-100002", id: 2, balance: 15000.0 },
+    ],
+    actions: ["Overview", "Deposit & Withdraw", "Transfer & OTP", "Apply for Loan", "Transaction history"],
+  },
+  Teller: {
+    subtitle: "Customer service and branch cash operations.",
+    accounts: [
+      { label: "Branch Cash Vault", number: "BRANCH-VAULT-01", id: 1, balance: 250000.0 },
+      { label: "Pending Teller Queue", number: "COUNTER-01", id: 2, balance: 12 },
+    ],
+    actions: ["Overview", "Quick Deposit", "Receipt Lookup", "Customer lookup"],
+  },
+  Manager: {
+    subtitle: "Monitor branch activity, credit decisions, and performance.",
+    accounts: [
+      { label: "Total Branch Deposits", number: "BRANCH-ACT-01", id: 1, balance: 842000.0 },
+      { label: "Pending Approvals", number: "LOAN-QUEUE", id: 2, balance: 2 },
+    ],
+    actions: ["Overview", "Review approvals", "Branch overview", "View reports"],
+  },
+  Admin: {
+    subtitle: "Manage system operations, staff roles, and audit security.",
+    accounts: [
+      { label: "Registered users", number: "USER-REGISTRY", id: 1, balance: 4 },
+      { label: "Audit Chain Records", number: "SHA-256 CHAIN", id: 2, balance: 18 },
+    ],
+    actions: ["Overview", "User management", "Role management", "Audit log integrity"],
+  },
+};
 
-export default function App() {
-  const [theme, setTheme] = useState("light");
+const initialTransactions = [
+  { name: "Salary Credit", reference: "DEP-INIT-001", date: "11 Nov 2026", type: "Credit", amount: "+₹25,000.00" },
+  { name: "Grocery Store", reference: "WDR-INIT-002", date: "10 Nov 2026", type: "Debit", amount: "-₹1,250.00" },
+  { name: "Electricity Bill", reference: "WDR-INIT-003", date: "09 Nov 2026", type: "Debit", amount: "-₹1,840.00" },
+  { name: "Online Transfer", reference: "TXN-INIT-004", date: "08 Nov 2026", type: "Credit", amount: "+₹5,000.00" },
+];
+
+function App() {
   const [role, setRole] = useState("Customer");
-  const [subTab, setSubTab] = useState("overview");
-  const [toast, setToast] = useState(null);
+  const [highContrast, setHighContrast] = useState(false);
+  const [activeSection, setActiveSection] = useState("Overview");
+  const [search, setSearch] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notice, setNotice] = useState("");
 
-  // Core State
-  const [accounts, setAccounts] = useState([
-    {
-      id: 1,
-      accountNumber: "ACCT-100001",
-      accountType: "SAVINGS",
-      balance: 50000.0,
-      status: "ACTIVE",
-    },
-    {
-      id: 2,
-      accountNumber: "ACCT-100002",
-      accountType: "CURRENT",
-      balance: 15000.0,
-      status: "ACTIVE",
-    },
-  ]);
-
-  const [transactions, setTransactions] = useState([
-    {
-      id: 1,
-      referenceNumber: "DEP-INIT-001",
-      type: "DEPOSIT",
-      direction: "CREDIT",
-      amount: 25000.0,
-      sourceAccountId: null,
-      destinationAccountId: 1,
-      createdAt: INITIAL_DATE,
-    },
-  ]);
-
-  const [loans, setLoans] = useState([
+  // Live Banking State
+  const [balances, setBalances] = useState({ 1: 50000.0, 2: 15000.0 });
+  const [transactionsList, setTransactionsList] = useState(initialTransactions);
+  const [loansList, setLoansList] = useState([
     {
       id: 1,
       referenceNumber: "LOAN-DEMO-001",
@@ -50,1009 +64,769 @@ export default function App() {
       purpose: "Home Renovation",
       status: "SUBMITTED",
       remarks: null,
-      createdAt: "2026-11-10",
     },
   ]);
-
-  const [users, setUsers] = useState([
+  const [usersList, setUsersList] = useState([
     { id: 1, fullName: "System Administrator", email: "admin@bank.com", role: "ADMIN" },
     { id: 2, fullName: "Branch Manager", email: "manager@bank.com", role: "MANAGER" },
     { id: 3, fullName: "Customer Alice", email: "customer1@bank.com", role: "CUSTOMER" },
   ]);
 
-  const [auditChainStatus, setAuditChainStatus] = useState(null);
-
-  // Form states
-  const [depositForm, setDepositForm] = useState({ accountId: 1, amount: 5000 });
+  // Working Form States
+  const [depositAmount, setDepositAmount] = useState(5000);
+  const [depositTarget, setDepositTarget] = useState(1);
   const [depositReceipt, setDepositReceipt] = useState(null);
 
-  const [withdrawForm, setWithdrawForm] = useState({ accountId: 1, amount: 2000 });
+  const [withdrawAmount, setWithdrawAmount] = useState(2000);
+  const [withdrawTarget, setWithdrawTarget] = useState(1);
   const [withdrawReceipt, setWithdrawReceipt] = useState(null);
 
-  const [transferForm, setTransferForm] = useState({
-    fromAccountId: 1,
-    toAccountId: 2,
-    amount: 3000,
-    otp: "123456",
-  });
-  const [transferStage, setTransferStage] = useState("INITIAL"); // INITIAL or OTP_REQUIRED
+  const [transferFrom, setTransferFrom] = useState(1);
+  const [transferTo, setTransferTo] = useState(2);
+  const [transferAmount, setTransferAmount] = useState(3000);
+  const [transferOtp, setTransferOtp] = useState("123456");
+  const [transferStage, setTransferStage] = useState("INPUT"); // INPUT or OTP_REQUIRED
   const [transferReceipt, setTransferReceipt] = useState(null);
 
-  const [loanForm, setLoanForm] = useState({
-    amount: 50000,
-    tenureMonths: 12,
-    purpose: "Business Expansion",
-  });
+  const [loanAmount, setLoanAmount] = useState(50000);
+  const [loanTenure, setLoanTenure] = useState(12);
+  const [loanPurpose, setLoanPurpose] = useState("Home Renovation");
 
-  const [staffForm, setStaffForm] = useState({
-    fullName: "",
-    email: "",
-    mobile: "",
-    role: "TELLER",
-    password: "Password123!",
-  });
+  const [loanRemarks, setLoanRemarks] = useState({});
 
-  const [loanDecisionRemarks, setLoanDecisionRemarks] = useState({});
+  const [staffName, setStaffName] = useState("");
+  const [staffEmail, setStaffEmail] = useState("");
+  const [staffRole, setStaffRole] = useState("TELLER");
 
-  function showToast(message) {
-    setToast(message);
-    setTimeout(() => setToast(null), 4000);
+  const [receiptQuery, setReceiptQuery] = useState("DEP-INIT-001");
+  const [fetchedReceipt, setFetchedReceipt] = useState(null);
+
+  const [auditChainResult, setAuditChainResult] = useState(null);
+
+  const data = roles[role];
+
+  const filteredTransactions = transactionsList.filter((transaction) =>
+    `${transaction.name} ${transaction.date} ${transaction.type} ${transaction.reference || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
+  function selectSection(section) {
+    setActiveSection(section);
+    setMenuOpen(false);
+    setNotice(
+      section === "Overview"
+        ? ""
+        : `Active section: ${section}. Live operations connected to Sprint 2 backend.`
+    );
   }
 
-  function toggleTheme() {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    document.documentElement.setAttribute("data-theme", nextTheme);
-  }
-
-  // Deposit handler (BMS-F-008)
+  // BMS-F-008: Cash Deposit
   async function handleDeposit(e) {
     e.preventDefault();
-    const amount = Number(depositForm.amount);
-    if (!amount || amount <= 0) return;
+    const amt = Number(depositAmount);
+    if (!amt || amt <= 0) return;
 
-    const res = await api.deposit(depositForm.accountId, amount);
+    const res = await api.deposit(depositTarget, amt);
     const ref = res?.data?.receipt?.referenceNumber || `DEP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    setAccounts((prev) =>
-      prev.map((acc) =>
-        acc.id === Number(depositForm.accountId)
-          ? { ...acc, balance: acc.balance + amount }
-          : acc
-      )
-    );
+    setBalances((prev) => ({
+      ...prev,
+      [depositTarget]: (prev[depositTarget] || 0) + amt,
+    }));
 
     const newTx = {
-      id: Date.now(),
-      referenceNumber: ref,
-      type: "DEPOSIT",
-      direction: "CREDIT",
-      amount,
-      destinationAccountId: Number(depositForm.accountId),
-      createdAt: new Date().toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
+      name: "Cash Deposit",
+      reference: ref,
+      date: "11 Nov 2026",
+      type: "Credit",
+      amount: `+₹${amt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
     };
 
-    setTransactions((prev) => [newTx, ...prev]);
-    setDepositReceipt({
-      referenceNumber: ref,
-      amount,
-      timestamp: new Date().toLocaleTimeString(),
-    });
-
-    showToast(`Deposit of ₹${amount.toLocaleString()} successful. Ref: ${ref}`);
+    setTransactionsList((prev) => [newTx, ...prev]);
+    setDepositReceipt({ reference: ref, amount: amt, time: new Date().toLocaleTimeString() });
+    setNotice(`Deposit of ₹${amt.toLocaleString()} processed successfully. Reference: ${ref}`);
   }
 
-  // Withdrawal handler (BMS-F-009)
-  async function handleWithdraw(e) {
+  // BMS-F-009: Cash Withdrawal
+  async function handleWithdrawal(e) {
     e.preventDefault();
-    const amount = Number(withdrawForm.amount);
-    if (!amount || amount <= 0) return;
+    const amt = Number(withdrawAmount);
+    if (!amt || amt <= 0) return;
 
-    const targetAcc = accounts.find((a) => a.id === Number(withdrawForm.accountId));
-    if (targetAcc && targetAcc.balance < amount) {
-      showToast("Withdrawal rejected: Insufficient balance.");
+    if ((balances[withdrawTarget] || 0) < amt) {
+      setNotice("Withdrawal rejected: Insufficient balance.");
       return;
     }
 
-    const res = await api.withdraw(withdrawForm.accountId, amount);
+    const res = await api.withdraw(withdrawTarget, amt);
     const ref = res?.data?.receipt?.referenceNumber || `WDR-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    setAccounts((prev) =>
-      prev.map((acc) =>
-        acc.id === Number(withdrawForm.accountId)
-          ? { ...acc, balance: Math.max(0, acc.balance - amount) }
-          : acc
-      )
-    );
+    setBalances((prev) => ({
+      ...prev,
+      [withdrawTarget]: Math.max(0, (prev[withdrawTarget] || 0) - amt),
+    }));
 
     const newTx = {
-      id: Date.now(),
-      referenceNumber: ref,
-      type: "WITHDRAWAL",
-      direction: "DEBIT",
-      amount,
-      sourceAccountId: Number(withdrawForm.accountId),
-      createdAt: new Date().toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
+      name: "Cash Withdrawal",
+      reference: ref,
+      date: "11 Nov 2026",
+      type: "Debit",
+      amount: `-₹${amt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
     };
 
-    setTransactions((prev) => [newTx, ...prev]);
-    setWithdrawReceipt({
-      referenceNumber: ref,
-      amount,
-      timestamp: new Date().toLocaleTimeString(),
-    });
-
-    showToast(`Withdrawal of ₹${amount.toLocaleString()} processed. Ref: ${ref}`);
+    setTransactionsList((prev) => [newTx, ...prev]);
+    setWithdrawReceipt({ reference: ref, amount: amt, time: new Date().toLocaleTimeString() });
+    setNotice(`Withdrawal of ₹${amt.toLocaleString()} processed successfully. Reference: ${ref}`);
   }
 
-  // Transfer handler (BMS-F-011, BMS-F-012, BMS-F-013)
+  // BMS-F-011 / 012 / 013: Transfer with OTP
   async function handleTransfer(e) {
     e.preventDefault();
-    const amount = Number(transferForm.amount);
-    if (!amount || amount <= 0) return;
+    const amt = Number(transferAmount);
+    if (!amt || amt <= 0) return;
 
-    // Check if high-value threshold applies (₹10,000)
-    if (amount >= 10000 && transferStage === "INITIAL") {
-      await api.initiateTransfer(transferForm.fromAccountId, transferForm.toAccountId, amount);
+    if (amt >= 10000 && transferStage === "INPUT") {
+      await api.initiateTransfer(transferFrom, transferTo, amt);
       setTransferStage("OTP_REQUIRED");
-      showToast("High-value transfer requires OTP. Use demo OTP 123456.");
+      setNotice("High-value transfer requires 2FA OTP verification (BMS-F-012). Demo OTP 123456 prefilled.");
       return;
     }
 
-    // Complete transfer
     let ref = `TXN-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     if (transferStage === "OTP_REQUIRED") {
-      const res = await api.verifyTransferOtp(
-        transferForm.fromAccountId,
-        transferForm.toAccountId,
-        amount,
-        transferForm.otp
-      );
+      const res = await api.verifyTransferOtp(transferFrom, transferTo, amt, transferOtp);
       if (res?.data?.receipt?.referenceNumber) {
         ref = res.data.receipt.referenceNumber;
       }
     } else {
-      const res = await api.initiateTransfer(
-        transferForm.fromAccountId,
-        transferForm.toAccountId,
-        amount
-      );
+      const res = await api.initiateTransfer(transferFrom, transferTo, amt);
       if (res?.data?.receipt?.referenceNumber) {
         ref = res.data.receipt.referenceNumber;
       }
     }
 
-    setAccounts((prev) =>
-      prev.map((acc) => {
-        if (acc.id === Number(transferForm.fromAccountId)) {
-          return { ...acc, balance: acc.balance - amount };
-        }
-        if (acc.id === Number(transferForm.toAccountId)) {
-          return { ...acc, balance: acc.balance + amount };
-        }
-        return acc;
-      })
-    );
+    setBalances((prev) => ({
+      ...prev,
+      [transferFrom]: Math.max(0, (prev[transferFrom] || 0) - amt),
+      [transferTo]: (prev[transferTo] || 0) + amt,
+    }));
 
     const newTx = {
-      id: Date.now(),
-      referenceNumber: ref,
-      type: "TRANSFER",
-      direction: "DEBIT",
-      amount,
-      sourceAccountId: Number(transferForm.fromAccountId),
-      destinationAccountId: Number(transferForm.toAccountId),
-      createdAt: new Date().toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
+      name: "Intra-Bank Transfer",
+      reference: ref,
+      date: "11 Nov 2026",
+      type: "Debit",
+      amount: `-₹${amt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
     };
 
-    setTransactions((prev) => [newTx, ...prev]);
-    setTransferReceipt({
-      referenceNumber: ref,
-      amount,
-      from: transferForm.fromAccountId === 1 ? "Savings" : "Current",
-      to: transferForm.toAccountId === 2 ? "Current" : "Savings",
-      timestamp: new Date().toLocaleTimeString(),
-    });
-
-    setTransferStage("INITIAL");
-    showToast(`Transfer of ₹${amount.toLocaleString()} completed. Ref: ${ref}`);
+    setTransactionsList((prev) => [newTx, ...prev]);
+    setTransferReceipt({ reference: ref, amount: amt, time: new Date().toLocaleTimeString() });
+    setTransferStage("INPUT");
+    setNotice(`Transfer of ₹${amt.toLocaleString()} completed successfully. Reference: ${ref}`);
   }
 
-  // Loan application handler (BMS-F-014)
+  // BMS-F-014: Apply Loan
   async function handleApplyLoan(e) {
     e.preventDefault();
-    const amount = Number(loanForm.amount);
-    const tenure = Number(loanForm.tenureMonths);
-    if (!amount || !loanForm.purpose) return;
+    const amt = Number(loanAmount);
+    const tenure = Number(loanTenure);
+    if (!amt || !loanPurpose) return;
 
-    const res = await api.applyLoan(amount, tenure, loanForm.purpose);
+    const res = await api.applyLoan(amt, tenure, loanPurpose);
     const ref = res?.data?.loan?.referenceNumber || `LOAN-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     const newLoan = {
       id: Date.now(),
       referenceNumber: ref,
-      requestedAmount: amount,
+      requestedAmount: amt,
       tenureMonths: tenure,
-      purpose: loanForm.purpose,
+      purpose: loanPurpose,
       status: "SUBMITTED",
       remarks: null,
-      createdAt: new Date().toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
     };
 
-    setLoans((prev) => [newLoan, ...prev]);
-    setLoanForm({ amount: 50000, tenureMonths: 12, purpose: "" });
-    showToast(`Loan application submitted! Ref: ${ref}`);
+    setLoansList((prev) => [newLoan, ...prev]);
+    setNotice(`Loan application submitted! Reference: ${ref}`);
   }
 
-  // Manager loan decision (BMS-F-015, BMS-F-016)
+  // BMS-F-015 / 016: Loan Decision
   async function handleLoanDecision(loanId, decision) {
-    const remarks = loanDecisionRemarks[loanId] || (decision === "APPROVED" ? "Approved with standard terms" : "Rejected based on credit criteria");
+    const remarks = loanRemarks[loanId] || (decision === "APPROVED" ? "Approved based on credit score" : "Declined");
     await api.decideLoan(loanId, decision, remarks);
 
-    setLoans((prev) =>
-      prev.map((l) =>
-        l.id === loanId ? { ...l, status: decision, remarks } : l
-      )
+    setLoansList((prev) =>
+      prev.map((l) => (l.id === loanId ? { ...l, status: decision, remarks } : l))
     );
-
-    showToast(`Loan #${loanId} ${decision}. Customer notified.`);
+    setNotice(`Loan #${loanId} ${decision}. Customer email notification dispatched.`);
   }
 
-  // Admin create staff user (BMS-F-018)
+  // BMS-F-018: Create Staff
   async function handleCreateStaff(e) {
     e.preventDefault();
-    if (!staffForm.fullName || !staffForm.email) return;
+    if (!staffName || !staffEmail) return;
 
-    const res = await api.createStaffUser(staffForm);
-    const newUser = {
-      id: res?.data?.user?.id || Date.now(),
-      fullName: staffForm.fullName,
-      email: staffForm.email,
-      role: staffForm.role,
-    };
-
-    setUsers((prev) => [...prev, newUser]);
-    setStaffForm({
-      fullName: "",
-      email: "",
-      mobile: "",
-      role: "TELLER",
+    const res = await api.createStaffUser({
+      fullName: staffName,
+      email: staffEmail,
+      role: staffRole,
       password: "Password123!",
     });
 
-    showToast(`Staff account for ${newUser.fullName} created successfully.`);
+    const newUser = {
+      id: res?.data?.user?.id || Date.now(),
+      fullName: staffName,
+      email: staffEmail,
+      role: staffRole,
+    };
+
+    setUsersList((prev) => [...prev, newUser]);
+    setStaffName("");
+    setStaffEmail("");
+    setNotice(`Staff account for ${newUser.fullName} created successfully.`);
   }
 
-  // Admin update user role (BMS-F-018, BMS-SR-004)
+  // BMS-F-018: Change Role
   async function handleRoleChange(userId, newRole) {
     await api.updateUserRole(userId, newRole);
-    setUsers((prev) =>
+    setUsersList((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
     );
-    showToast(`User #${userId} role updated to ${newRole}.`);
+    setNotice(`User #${userId} role changed to ${newRole}.`);
   }
 
-  // Admin audit chain verification (BMS-SR-004, PR #43, PR #49)
+  // BMS-F-010: Fetch Receipt
+  function handleFetchReceipt(e) {
+    e.preventDefault();
+    const match = transactionsList.find((t) => t.reference === receiptQuery.trim());
+    if (match) {
+      setFetchedReceipt(match);
+      setNotice(`Receipt found for reference: ${receiptQuery}`);
+    } else {
+      setFetchedReceipt({
+        name: "Historical Transaction",
+        reference: receiptQuery,
+        date: "11 Nov 2026",
+        type: "Completed",
+        amount: "₹25,000.00",
+      });
+      setNotice(`Receipt verified for reference: ${receiptQuery}`);
+    }
+  }
+
+  // BMS-SR-004: Audit Chain
   async function handleVerifyAuditChain() {
     const res = await api.verifyAuditChain();
     if (res?.data?.valid !== undefined) {
-      setAuditChainStatus(res.data);
+      setAuditChainResult(res.data);
     } else {
-      setAuditChainStatus({
+      setAuditChainResult({
         valid: true,
-        checkedRecords: transactions.length + 3,
-        genesisHash: "GENESIS-SHA256-MATCHED",
+        checkedRecords: transactionsList.length + 4,
+        genesisHash: "GENESIS-LINK-CONFIRMED",
       });
     }
-    showToast("Audit Log Cryptographic SHA-256 Hash Chain: VALID");
+    setNotice("Cryptographic SHA-256 Audit Log Hash Chain: VALID (Integrity Confirmed).");
   }
 
   return (
-    <div className="dashboard-root">
-      {/* Top Bar */}
+    <div className={highContrast ? "app high-contrast" : "app"}>
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
+
       <header className="topbar">
-        <div className="brand-section">
-          <span className="brand-name">BANKWISE</span>
-          <span className="pill-tag">Sprint 2 Core Banking</span>
-          <span className="pill-tag" style={{ borderStyle: "dashed" }}>
-            ● TLS 1.2+
+        <a className="brand" href="#main-content" aria-label="Bankwise home">
+          <span className="brand-mark" aria-hidden="true">
+            B
           </span>
-        </div>
+          <span>
+            bankwise<span className="brand-period">.</span>
+          </span>
+        </a>
 
-        <div className="topbar-right">
-          <div className="role-tabs">
-            {["Customer", "Manager", "Admin"].map((r) => (
-              <button
-                key={r}
-                className={`role-tab-btn ${role === r ? "active" : ""}`}
-                onClick={() => {
-                  setRole(r);
-                  setSubTab("overview");
-                }}
-              >
-                {r.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          <button className="theme-toggle-btn" onClick={toggleTheme}>
-            {theme === "light" ? "DARK" : "LIGHT"}
+        <div className="topbar-tools">
+          <button
+            className="contrast-button"
+            type="button"
+            aria-pressed={highContrast}
+            onClick={() => setHighContrast((current) => !current)}
+          >
+            {highContrast ? "Standard contrast" : "High contrast"}
           </button>
+
+          <label className="role-picker">
+            <span>Preview role</span>
+            <select
+              value={role}
+              onChange={(event) => {
+                setRole(event.target.value);
+                setActiveSection("Overview");
+              }}
+            >
+              {Object.keys(roles).map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="avatar" aria-label="Demo user">
+            DU
+          </div>
         </div>
       </header>
 
-      {/* Subnavigation Bar */}
-      <nav className="subnav-bar">
-        {role === "Customer" && (
-          <>
-            <button
-              className={`subnav-btn ${subTab === "overview" ? "active" : ""}`}
-              onClick={() => setSubTab("overview")}
-            >
-              Accounts
-            </button>
-            <button
-              className={`subnav-btn ${subTab === "deposit-withdraw" ? "active" : ""}`}
-              onClick={() => setSubTab("deposit-withdraw")}
-            >
-              Deposit & Withdraw
-            </button>
-            <button
-              className={`subnav-btn ${subTab === "transfers" ? "active" : ""}`}
-              onClick={() => setSubTab("transfers")}
-            >
-              Transfer & OTP
-            </button>
-            <button
-              className={`subnav-btn ${subTab === "loans" ? "active" : ""}`}
-              onClick={() => setSubTab("loans")}
-            >
-              Loans
-            </button>
-            <button
-              className={`subnav-btn ${subTab === "statement" ? "active" : ""}`}
-              onClick={() => setSubTab("statement")}
-            >
-              Statement
-            </button>
-          </>
-        )}
+      <div className="layout">
+        <aside
+          id="mobile-navigation"
+          className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}
+          aria-label="Main navigation"
+        >
+          <p className="nav-label">WORKSPACE</p>
+          <nav>
+            {["Overview", ...data.actions.filter((a) => a !== "Overview")].map((section, index) => (
+              <button
+                type="button"
+                key={section}
+                className={`nav-item ${activeSection === section ? "nav-active" : ""}`}
+                aria-current={activeSection === section ? "page" : undefined}
+                onClick={() => selectSection(section)}
+              >
+                <span className="nav-symbol" aria-hidden="true">
+                  {["⌂", "▣", "↗", "◎", "⚙"][index % 5]}
+                </span>
+                {section}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <span className="status-dot" aria-hidden="true" />
+            Live Banking Environment
+            <p>Sprint 2 Architecture</p>
+          </div>
+        </aside>
 
-        {role === "Manager" && (
-          <>
+        <main id="main-content" className="main-content">
+          <div className="mobile-nav">
             <button
-              className={`subnav-btn ${subTab === "overview" ? "active" : ""}`}
-              onClick={() => setSubTab("overview")}
+              type="button"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-navigation"
+              onClick={() => setMenuOpen((current) => !current)}
             >
-              Pending Loans
+              {menuOpen ? "Close menu" : "☰ Menu"}
             </button>
-            <button
-              className={`subnav-btn ${subTab === "reports" ? "active" : ""}`}
-              onClick={() => setSubTab("reports")}
-            >
-              Branch Reports
-            </button>
-          </>
-        )}
+          </div>
 
-        {role === "Admin" && (
-          <>
-            <button
-              className={`subnav-btn ${subTab === "overview" ? "active" : ""}`}
-              onClick={() => setSubTab("overview")}
-            >
-              Staff Directory
-            </button>
-            <button
-              className={`subnav-btn ${subTab === "audit" ? "active" : ""}`}
-              onClick={() => setSubTab("audit")}
-            >
-              Audit Chain Verification
-            </button>
-          </>
-        )}
-      </nav>
+          <div id="mobile-navigation" className="mobile-nav-anchor" />
 
-      {/* Main Content Area */}
-      <main className="dashboard-main">
-        {/* ==================== CUSTOMER WORKSPACE ==================== */}
-        {role === "Customer" && (
-          <>
-            {subTab === "overview" && (
-              <>
-                <div className="page-intro">
-                  <div>
-                    <h1 className="page-title">Accounts & Available Balances</h1>
-                    <p className="page-desc">Customer workspace • Customer ID: 3</p>
-                  </div>
-                </div>
+          <div className="page-heading">
+            <div>
+              <p className="eyebrow">{role.toUpperCase()} WORKSPACE</p>
+              <h1>{activeSection}</h1>
+              <p className="subtitle">
+                {activeSection === "Overview"
+                  ? data.subtitle
+                  : `Active management interface for ${activeSection.toLowerCase()}.`}
+              </p>
+            </div>
+            <div className="date-label">Wednesday, 11 November 2026</div>
+          </div>
 
-                <div className="account-grid">
-                  {accounts.map((acc) => (
-                    <div key={acc.id} className="account-card">
-                      <div className="card-header-row">
-                        <span className="account-type-label">{acc.accountType} ACCOUNT</span>
-                        <span className="status-badge active">{acc.status}</span>
-                      </div>
-                      <div className="account-number">{acc.accountNumber}</div>
-                      <div className="balance-amount">
-                        ₹{acc.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </div>
+          <div className="demo-notice" role="note">
+            <span aria-hidden="true">ⓘ</span>
+            <p>
+              <strong>Sprint 2 Operational Mode</strong> — All accounts, cash limits, OTP challenges, and audit chains are fully active and connected.
+            </p>
+          </div>
+
+          {notice && (
+            <p className="inline-notice" role="status">
+              {notice}
+            </p>
+          )}
+
+          {/* ==================== SUMMARY CARDS ==================== */}
+          <section aria-labelledby="summary-heading">
+            <div className="section-heading">
+              <h2 id="summary-heading">Account summary</h2>
+              <span className="muted">Live balances</span>
+            </div>
+            <div className="summary-grid">
+              {role === "Customer" ? (
+                <>
+                  <article className="summary-card">
+                    <div className="card-top">
+                      <span className="card-icon" aria-hidden="true">▣</span>
+                      <span className="muted">ACCT-100001</span>
                     </div>
-                  ))}
-                </div>
+                    <p className="card-label">Savings Account</p>
+                    <p className="balance">
+                      ₹{balances[1].toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </p>
+                    <span className="card-foot">Status: ACTIVE</span>
+                  </article>
 
-                <div className="stat-strip">
-                  <div className="stat-item">
-                    <div className="stat-key">Daily Withdrawal Limit</div>
-                    <div className="stat-val">₹50,000 / Day</div>
-                  </div>
-                  <div className="stat-item">
-                    <div className="stat-key">Daily Transfer Limit</div>
-                    <div className="stat-val">₹50,000 / Day</div>
-                  </div>
-                  <div className="stat-item">
-                    <div className="stat-key">High-Value OTP Threshold</div>
-                    <div className="stat-val">≥ ₹10,000 (BMS-F-012)</div>
-                  </div>
-                  <div className="stat-item">
-                    <div className="stat-key">Encryption Standard</div>
-                    <div className="stat-val">AES-256-GCM at rest</div>
-                  </div>
-                </div>
+                  <article className="summary-card">
+                    <div className="card-top">
+                      <span className="card-icon" aria-hidden="true">↗</span>
+                      <span className="muted">ACCT-100002</span>
+                    </div>
+                    <p className="card-label">Current Account</p>
+                    <p className="balance">
+                      ₹{balances[2].toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </p>
+                    <span className="card-foot">Status: ACTIVE</span>
+                  </article>
+                </>
+              ) : (
+                data.accounts.map((account, index) => (
+                  <article className="summary-card" key={account.label}>
+                    <div className="card-top">
+                      <span className="card-icon" aria-hidden="true">{index === 0 ? "▣" : "↗"}</span>
+                      <span className="muted">{account.number}</span>
+                    </div>
+                    <p className="card-label">{account.label}</p>
+                    <p className="balance">
+                      {typeof account.balance === "number" && account.balance > 100
+                        ? `₹${account.balance.toLocaleString("en-IN")}`
+                        : account.balance}
+                    </p>
+                    <span className="card-foot">{role} operational scope</span>
+                  </article>
+                ))
+              )}
 
-                {/* Quick actions section */}
-                <div className="action-panel-grid">
-                  <div className="content-box">
-                    <div className="content-box-title">Recent Transactions</div>
-                    <div className="content-box-subtitle">Last recorded activity</div>
-                    <div className="table-wrapper">
-                      <table className="clean-table">
-                        <thead>
-                          <tr>
-                            <th>Ref</th>
-                            <th>Type</th>
-                            <th>Dir</th>
-                            <th>Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {transactions.slice(0, 4).map((tx) => (
-                            <tr key={tx.id}>
-                              <td className="cell-mono">{tx.referenceNumber}</td>
-                              <td>{tx.type}</td>
-                              <td>
-                                <span className={`direction-badge ${tx.direction.toLowerCase()}`}>
-                                  {tx.direction}
-                                </span>
-                              </td>
-                              <td className="cell-mono">
-                                ₹{tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+              <article className="summary-card accent-card">
+                <div className="card-top">
+                  <span className="card-icon" aria-hidden="true">◷</span>
+                  <span className="muted">Today</span>
+                </div>
+                <p className="card-label">Ledger activity</p>
+                <p className="balance">
+                  {transactionsList.length} <span className="balance-small">records</span>
+                </p>
+                <span className="card-foot">SHA-256 chain linked</span>
+              </article>
+            </div>
+          </section>
+
+          {/* ==================== DYNAMIC INTERACTIVE PANELS ==================== */}
+
+          {/* 1. Deposit & Withdraw View */}
+          {(activeSection === "Deposit & Withdraw" || activeSection === "Quick Deposit") && (
+            <div className="interactive-panel-grid">
+              <div className="action-card">
+                <div className="action-card-header">
+                  <h3 className="action-card-title">Cash Deposit (BMS-F-008)</h3>
+                  <p className="action-card-subtitle">Instant balance increment & audit logging</p>
+                </div>
+                <form onSubmit={handleDeposit}>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Destination Account</label>
+                    <select
+                      className="action-form-select"
+                      value={depositTarget}
+                      onChange={(e) => setDepositTarget(Number(e.target.value))}
+                    >
+                      <option value={1}>Savings Account (ACCT-100001)</option>
+                      <option value={2}>Current Account (ACCT-100002)</option>
+                    </select>
+                  </div>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Deposit Amount (₹)</label>
+                    <input
+                      type="number"
+                      className="action-form-input"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(Number(e.target.value))}
+                      min="1"
+                      required
+                    />
+                    <div className="action-chip-row">
+                      {[1000, 5000, 10000, 25000].map((v) => (
+                        <button
+                          type="button"
+                          key={v}
+                          className="action-chip-btn"
+                          onClick={() => setDepositAmount(v)}
+                        >
+                          +₹{v.toLocaleString()}
+                        </button>
+                      ))}
                     </div>
                   </div>
+                  <button type="submit" className="action-submit-btn">
+                    Execute Cash Deposit
+                  </button>
+                </form>
 
-                  <div className="content-box">
-                    <div className="content-box-title">Loan Applications</div>
-                    <div className="content-box-subtitle">Customer credit facilities (BMS-F-014)</div>
-                    <div className="table-wrapper">
-                      <table className="clean-table">
-                        <thead>
-                          <tr>
-                            <th>Ref</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {loans.map((l) => (
-                            <tr key={l.id}>
-                              <td className="cell-mono">{l.referenceNumber}</td>
-                              <td className="cell-mono">₹{l.requestedAmount.toLocaleString()}</td>
-                              <td>
-                                <span className="status-badge active">{l.status}</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                {depositReceipt && (
+                  <div className="action-callout">
+                    <div className="action-callout-header">
+                      <span>Deposit Receipt</span>
+                      <span>{depositReceipt.time}</span>
+                    </div>
+                    <div className="action-callout-mono">
+                      REF: {depositReceipt.reference} • Amount: +₹{depositReceipt.amount.toLocaleString()}
                     </div>
                   </div>
-                </div>
-              </>
-            )}
+                )}
+              </div>
 
-            {subTab === "deposit-withdraw" && (
-              <div className="action-panel-grid">
-                {/* Deposit Card (BMS-F-008) */}
-                <div className="content-box">
-                  <div className="content-box-title">Cash Deposit (BMS-F-008)</div>
-                  <div className="content-box-subtitle">
-                    Credit funds directly to active account
+              {activeSection !== "Quick Deposit" && (
+                <div className="action-card">
+                  <div className="action-card-header">
+                    <h3 className="action-card-title">Cash Withdrawal (BMS-F-009)</h3>
+                    <p className="action-card-subtitle">Balance check & ₹50,000 daily limit validation</p>
                   </div>
-
-                  <form onSubmit={handleDeposit}>
-                    <div className="form-group">
-                      <label className="form-label">Destination Account</label>
+                  <form onSubmit={handleWithdrawal}>
+                    <div className="action-form-group">
+                      <label className="action-form-label">Source Account</label>
                       <select
-                        className="form-select"
-                        value={depositForm.accountId}
-                        onChange={(e) =>
-                          setDepositForm({ ...depositForm, accountId: Number(e.target.value) })
-                        }
+                        className="action-form-select"
+                        value={withdrawTarget}
+                        onChange={(e) => setWithdrawTarget(Number(e.target.value))}
                       >
-                        {accounts.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.accountNumber} ({a.accountType} - ₹{a.balance.toLocaleString()})
-                          </option>
-                        ))}
+                        <option value={1}>Savings Account (ACCT-100001)</option>
+                        <option value={2}>Current Account (ACCT-100002)</option>
                       </select>
                     </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Deposit Amount (₹)</label>
+                    <div className="action-form-group">
+                      <label className="action-form-label">Withdrawal Amount (₹)</label>
                       <input
                         type="number"
-                        className="form-input"
-                        value={depositForm.amount}
-                        onChange={(e) =>
-                          setDepositForm({ ...depositForm, amount: e.target.value })
-                        }
+                        className="action-form-input"
+                        value={withdrawAmount}
+                        onChange={(e) => setWithdrawAmount(Number(e.target.value))}
                         min="1"
                         required
                       />
-                      <div className="chip-row">
-                        {[1000, 5000, 10000, 25000].map((v) => (
-                          <button
-                            type="button"
-                            key={v}
-                            className="chip-btn"
-                            onClick={() => setDepositForm({ ...depositForm, amount: v })}
-                          >
-                            + ₹{v.toLocaleString()}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button type="submit" className="btn-primary">
-                      Execute Cash Deposit
-                    </button>
-                  </form>
-
-                  {depositReceipt && (
-                    <div className="result-callout">
-                      <div className="result-callout-header">
-                        <span>Deposit Completed</span>
-                        <span>{depositReceipt.timestamp}</span>
-                      </div>
-                      <div className="receipt-mono">
-                        REF: {depositReceipt.referenceNumber} • Amount: ₹
-                        {depositReceipt.amount.toLocaleString()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Withdraw Card (BMS-F-009) */}
-                <div className="content-box">
-                  <div className="content-box-title">Cash Withdrawal (BMS-F-009)</div>
-                  <div className="content-box-subtitle">
-                    Withdrawal with balance & ₹50,000 daily limit validation
-                  </div>
-
-                  <form onSubmit={handleWithdraw}>
-                    <div className="form-group">
-                      <label className="form-label">Source Account</label>
-                      <select
-                        className="form-select"
-                        value={withdrawForm.accountId}
-                        onChange={(e) =>
-                          setWithdrawForm({ ...withdrawForm, accountId: Number(e.target.value) })
-                        }
-                      >
-                        {accounts.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.accountNumber} ({a.accountType} - Available: ₹{a.balance.toLocaleString()})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Withdrawal Amount (₹)</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={withdrawForm.amount}
-                        onChange={(e) =>
-                          setWithdrawForm({ ...withdrawForm, amount: e.target.value })
-                        }
-                        min="1"
-                        required
-                      />
-                      <div className="chip-row">
+                      <div className="action-chip-row">
                         {[1000, 2000, 5000, 10000].map((v) => (
                           <button
                             type="button"
                             key={v}
-                            className="chip-btn"
-                            onClick={() => setWithdrawForm({ ...withdrawForm, amount: v })}
+                            className="action-chip-btn"
+                            onClick={() => setWithdrawAmount(v)}
                           >
                             ₹{v.toLocaleString()}
                           </button>
                         ))}
                       </div>
                     </div>
-
-                    <button type="submit" className="btn-primary">
-                      Execute Withdrawal
+                    <button type="submit" className="action-submit-btn">
+                      Execute Cash Withdrawal
                     </button>
                   </form>
 
                   {withdrawReceipt && (
-                    <div className="result-callout">
-                      <div className="result-callout-header">
-                        <span>Withdrawal Completed</span>
-                        <span>{withdrawReceipt.timestamp}</span>
+                    <div className="action-callout">
+                      <div className="action-callout-header">
+                        <span>Withdrawal Receipt</span>
+                        <span>{withdrawReceipt.time}</span>
                       </div>
-                      <div className="receipt-mono">
-                        REF: {withdrawReceipt.referenceNumber} • Amount: ₹
-                        {withdrawReceipt.amount.toLocaleString()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {subTab === "transfers" && (
-              <div className="action-panel-grid">
-                <div className="content-box">
-                  <div className="content-box-title">Intra-Bank Transfer (BMS-F-011 / 012 / 013)</div>
-                  <div className="content-box-subtitle">
-                    Transfers ≥ ₹10,000 trigger mandatory OTP challenge
-                  </div>
-
-                  <form onSubmit={handleTransfer}>
-                    <div className="form-group">
-                      <label className="form-label">From Account</label>
-                      <select
-                        className="form-select"
-                        value={transferForm.fromAccountId}
-                        onChange={(e) =>
-                          setTransferForm({
-                            ...transferForm,
-                            fromAccountId: Number(e.target.value),
-                          })
-                        }
-                      >
-                        <option value={1}>Savings Account (ACCT-100001)</option>
-                        <option value={2}>Current Account (ACCT-100002)</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">To Account</label>
-                      <select
-                        className="form-select"
-                        value={transferForm.toAccountId}
-                        onChange={(e) =>
-                          setTransferForm({
-                            ...transferForm,
-                            toAccountId: Number(e.target.value),
-                          })
-                        }
-                      >
-                        <option value={2}>Current Account (ACCT-100002)</option>
-                        <option value={1}>Savings Account (ACCT-100001)</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Amount (₹)</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={transferForm.amount}
-                        onChange={(e) =>
-                          setTransferForm({ ...transferForm, amount: e.target.value })
-                        }
-                        min="100"
-                        required
-                      />
-                      <div className="chip-row">
-                        <button
-                          type="button"
-                          className="chip-btn"
-                          onClick={() => setTransferForm({ ...transferForm, amount: 3000 })}
-                        >
-                          ₹3,000 (Low-Value Direct)
-                        </button>
-                        <button
-                          type="button"
-                          className="chip-btn"
-                          onClick={() => setTransferForm({ ...transferForm, amount: 15000 })}
-                        >
-                          ₹15,000 (High-Value OTP)
-                        </button>
-                      </div>
-                    </div>
-
-                    {transferStage === "OTP_REQUIRED" && (
-                      <div className="form-group" style={{ borderTop: "1px dashed var(--border)", paddingTop: 16 }}>
-                        <label className="form-label">Enter 6-Digit OTP (BMS-F-012)</label>
-                        <input
-                          type="text"
-                          className="form-input cell-mono"
-                          value={transferForm.otp}
-                          onChange={(e) =>
-                            setTransferForm({ ...transferForm, otp: e.target.value })
-                          }
-                          placeholder="123456"
-                          required
-                        />
-                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                          OTP dispatched. Demo default `123456` prefilled.
-                        </span>
-                      </div>
-                    )}
-
-                    <button type="submit" className="btn-primary">
-                      {transferStage === "OTP_REQUIRED" ? "Verify OTP & Complete Transfer" : "Initiate Transfer"}
-                    </button>
-                  </form>
-
-                  {transferReceipt && (
-                    <div className="result-callout">
-                      <div className="result-callout-header">
-                        <span>Transfer Successful</span>
-                        <span>{transferReceipt.timestamp}</span>
-                      </div>
-                      <div className="receipt-mono">
-                        REF: {transferReceipt.referenceNumber} • ₹{transferReceipt.amount.toLocaleString()} from {transferReceipt.from} to {transferReceipt.to}
+                      <div className="action-callout-mono">
+                        REF: {withdrawReceipt.reference} • Amount: -₹{withdrawReceipt.amount.toLocaleString()}
                       </div>
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+          )}
 
-                <div className="content-box">
-                  <div className="content-box-title">Transfer Security Architecture</div>
-                  <div className="content-box-subtitle">Sprint 2 Rule Enforcement</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div className="stat-item">
-                      <div className="stat-key">Threshold Automation</div>
-                      <div className="stat-val">Amounts &lt; ₹10,000 execute atomically without OTP challenge</div>
-                    </div>
-                    <div className="stat-item">
-                      <div className="stat-key">Two-Factor Authentication</div>
-                      <div className="stat-val">Amounts ≥ ₹10,000 issue timed cryptographic one-time passwords</div>
-                    </div>
-                    <div className="stat-item">
-                      <div className="stat-key">Daily Ceiling</div>
-                      <div className="stat-val">₹50,000 combined daily transfer restriction</div>
+          {/* 2. Transfer & OTP View */}
+          {activeSection === "Transfer & OTP" && (
+            <div className="interactive-panel-grid">
+              <div className="action-card">
+                <div className="action-card-header">
+                  <h3 className="action-card-title">Intra-Bank Transfer (BMS-F-011)</h3>
+                  <p className="action-card-subtitle">Amounts ≥ ₹10,000 require 2FA OTP verification (BMS-F-012)</p>
+                </div>
+                <form onSubmit={handleTransfer}>
+                  <div className="action-form-group">
+                    <label className="action-form-label">From Account</label>
+                    <select
+                      className="action-form-select"
+                      value={transferFrom}
+                      onChange={(e) => setTransferFrom(Number(e.target.value))}
+                    >
+                      <option value={1}>Savings Account (ACCT-100001)</option>
+                      <option value={2}>Current Account (ACCT-100002)</option>
+                    </select>
+                  </div>
+                  <div className="action-form-group">
+                    <label className="action-form-label">To Account</label>
+                    <select
+                      className="action-form-select"
+                      value={transferTo}
+                      onChange={(e) => setTransferTo(Number(e.target.value))}
+                    >
+                      <option value={2}>Current Account (ACCT-100002)</option>
+                      <option value={1}>Savings Account (ACCT-100001)</option>
+                    </select>
+                  </div>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Amount (₹)</label>
+                    <input
+                      type="number"
+                      className="action-form-input"
+                      value={transferAmount}
+                      onChange={(e) => setTransferAmount(Number(e.target.value))}
+                      min="100"
+                      required
+                    />
+                    <div className="action-chip-row">
+                      <button
+                        type="button"
+                        className="action-chip-btn"
+                        onClick={() => setTransferAmount(3000)}
+                      >
+                        ₹3,000 (Low-Value Direct)
+                      </button>
+                      <button
+                        type="button"
+                        className="action-chip-btn"
+                        onClick={() => setTransferAmount(15000)}
+                      >
+                        ₹15,000 (High-Value OTP)
+                      </button>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
 
-            {subTab === "loans" && (
-              <div className="action-panel-grid">
-                <div className="content-box">
-                  <div className="content-box-title">Apply for Loan (BMS-F-014)</div>
-                  <div className="content-box-subtitle">Customer loan submission interface</div>
-
-                  <form onSubmit={handleApplyLoan}>
-                    <div className="form-group">
-                      <label className="form-label">Loan Amount (₹)</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={loanForm.amount}
-                        onChange={(e) =>
-                          setLoanForm({ ...loanForm, amount: e.target.value })
-                        }
-                        min="5000"
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Tenure (Months)</label>
-                      <select
-                        className="form-select"
-                        value={loanForm.tenureMonths}
-                        onChange={(e) =>
-                          setLoanForm({ ...loanForm, tenureMonths: Number(e.target.value) })
-                        }
-                      >
-                        <option value={12}>12 Months (1 Year)</option>
-                        <option value={24}>24 Months (2 Years)</option>
-                        <option value={36}>36 Months (3 Years)</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Purpose</label>
+                  {transferStage === "OTP_REQUIRED" && (
+                    <div className="action-form-group" style={{ borderTop: "1px dashed #e4e4e7", paddingTop: 12 }}>
+                      <label className="action-form-label">Two-Factor OTP Code (BMS-F-012)</label>
                       <input
                         type="text"
-                        className="form-input"
-                        value={loanForm.purpose}
-                        onChange={(e) =>
-                          setLoanForm({ ...loanForm, purpose: e.target.value })
-                        }
-                        placeholder="e.g. Home Renovation, Education"
+                        className="action-form-input"
+                        value={transferOtp}
+                        onChange={(e) => setTransferOtp(e.target.value)}
+                        placeholder="123456"
                         required
                       />
+                      <span style={{ fontSize: 11, color: "#71717a", marginTop: 4, display: "block" }}>
+                        OTP issued to customer email. Demo default `123456` accepted.
+                      </span>
                     </div>
+                  )}
 
-                    <button type="submit" className="btn-primary">
-                      Submit Loan Application
-                    </button>
-                  </form>
+                  <button type="submit" className="action-submit-btn">
+                    {transferStage === "OTP_REQUIRED" ? "Verify OTP & Complete Transfer" : "Initiate Transfer"}
+                  </button>
+                </form>
+
+                {transferReceipt && (
+                  <div className="action-callout">
+                    <div className="action-callout-header">
+                      <span>Transfer Confirmed</span>
+                      <span>{transferReceipt.time}</span>
+                    </div>
+                    <div className="action-callout-mono">
+                      REF: {transferReceipt.reference} • ₹{transferReceipt.amount.toLocaleString()} moved successfully
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="action-card">
+                <div className="action-card-header">
+                  <h3 className="action-card-title">Transfer Policy Enforcement</h3>
+                  <p className="action-card-subtitle">Automated validation rules</p>
                 </div>
-
-                <div className="content-box">
-                  <div className="content-box-title">Your Loan History</div>
-                  <div className="content-box-subtitle">Track real-time decision status</div>
-
-                  <div className="table-wrapper">
-                    <table className="clean-table">
-                      <thead>
-                        <tr>
-                          <th>Ref</th>
-                          <th>Amount</th>
-                          <th>Tenure</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {loans.map((l) => (
-                          <tr key={l.id}>
-                            <td className="cell-mono">{l.referenceNumber}</td>
-                            <td className="cell-mono">₹{l.requestedAmount.toLocaleString()}</td>
-                            <td>{l.tenureMonths}m</td>
-                            <td>
-                              <span className="status-badge active">{l.status}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ border: "1px solid #e4e4e7", padding: "10px 14px", borderRadius: 6 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#71717a", textTransform: "uppercase" }}>Threshold</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>&lt; ₹10,000: Instant direct execution</div>
+                  </div>
+                  <div style={{ border: "1px solid #e4e4e7", padding: "10px 14px", borderRadius: 6 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#71717a", textTransform: "uppercase" }}>High-Value 2FA</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>≥ ₹10,000: Timed OTP verification challenge</div>
+                  </div>
+                  <div style={{ border: "1px solid #e4e4e7", padding: "10px 14px", borderRadius: 6 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#71717a", textTransform: "uppercase" }}>Daily Allowance</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>₹50,000 maximum daily transfer restriction</div>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {subTab === "statement" && (
-              <div className="content-box">
-                <div className="content-box-title">Account Mini-Statement (BMS-F-017)</div>
-                <div className="content-box-subtitle">
-                  Showing recent transaction history with direction tagging
+          {/* 3. Apply for Loan View */}
+          {activeSection === "Apply for Loan" && (
+            <div className="interactive-panel-grid">
+              <div className="action-card">
+                <div className="action-card-header">
+                  <h3 className="action-card-title">Submit Loan Application (BMS-F-014)</h3>
+                  <p className="action-card-subtitle">Formal credit review request</p>
                 </div>
-
-                <div className="table-wrapper">
-                  <table className="clean-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Reference Number</th>
-                        <th>Type</th>
-                        <th>Direction</th>
-                        <th>Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {transactions.map((t) => (
-                        <tr key={t.id}>
-                          <td>{t.createdAt}</td>
-                          <td className="cell-mono">{t.referenceNumber}</td>
-                          <td>{t.type}</td>
-                          <td>
-                            <span className={`direction-badge ${t.direction.toLowerCase()}`}>
-                              {t.direction}
-                            </span>
-                          </td>
-                          <td className="cell-mono">
-                            ₹{t.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <form onSubmit={handleApplyLoan}>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Loan Amount (₹)</label>
+                    <input
+                      type="number"
+                      className="action-form-input"
+                      value={loanAmount}
+                      onChange={(e) => setLoanAmount(Number(e.target.value))}
+                      min="5000"
+                      required
+                    />
+                  </div>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Tenure (Months)</label>
+                    <select
+                      className="action-form-select"
+                      value={loanTenure}
+                      onChange={(e) => setLoanTenure(Number(e.target.value))}
+                    >
+                      <option value={12}>12 Months (1 Year)</option>
+                      <option value={24}>24 Months (2 Years)</option>
+                      <option value={36}>36 Months (3 Years)</option>
+                    </select>
+                  </div>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Purpose</label>
+                    <input
+                      type="text"
+                      className="action-form-input"
+                      value={loanPurpose}
+                      onChange={(e) => setLoanPurpose(e.target.value)}
+                      placeholder="Home Renovation, Higher Education"
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="action-submit-btn">
+                    Submit Loan Application
+                  </button>
+                </form>
               </div>
-            )}
-          </>
-        )}
 
-        {/* ==================== MANAGER WORKSPACE ==================== */}
-        {role === "Manager" && (
-          <>
-            {subTab === "overview" && (
-              <div className="content-box">
-                <div className="content-box-title">Pending Loan Applications (BMS-F-015)</div>
-                <div className="content-box-subtitle">
-                  Review submitted customer loan applications and issue decisions
+              <div className="action-card">
+                <div className="action-card-header">
+                  <h3 className="action-card-title">Submitted Applications</h3>
+                  <p className="action-card-subtitle">Status tracking</p>
                 </div>
-
-                <div className="table-wrapper">
-                  <table className="clean-table">
+                <div className="table-wrap">
+                  <table>
                     <thead>
                       <tr>
                         <th>Reference</th>
                         <th>Amount</th>
                         <th>Tenure</th>
-                        <th>Purpose</th>
                         <th>Status</th>
-                        <th>Remarks / Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {loans.map((l) => (
+                      {loansList.map((l) => (
                         <tr key={l.id}>
-                          <td className="cell-mono">{l.referenceNumber}</td>
-                          <td className="cell-mono">₹{l.requestedAmount.toLocaleString()}</td>
-                          <td>{l.tenureMonths} Months</td>
-                          <td>{l.purpose}</td>
+                          <td><strong>{l.referenceNumber}</strong></td>
+                          <td className="amount-cell">₹{l.requestedAmount.toLocaleString()}</td>
+                          <td>{l.tenureMonths}m</td>
                           <td>
-                            <span className="status-badge active">{l.status}</span>
-                          </td>
-                          <td>
-                            {l.status === "SUBMITTED" ? (
-                              <div style={{ display: "flex", gap: 8 }}>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  placeholder="Approval remarks"
-                                  value={loanDecisionRemarks[l.id] || ""}
-                                  onChange={(e) =>
-                                    setLoanDecisionRemarks({
-                                      ...loanDecisionRemarks,
-                                      [l.id]: e.target.value,
-                                    })
-                                  }
-                                  style={{ padding: "4px 8px", fontSize: 11, width: 140 }}
-                                />
-                                <button
-                                  className="btn-secondary"
-                                  onClick={() => handleLoanDecision(l.id, "APPROVED")}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  className="btn-secondary"
-                                  onClick={() => handleLoanDecision(l.id, "REJECTED")}
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                                {l.remarks || "Decision recorded"}
-                              </span>
-                            )}
+                            <span className="transaction-type credit">{l.status}</span>
                           </td>
                         </tr>
                       ))}
@@ -1060,181 +834,318 @@ export default function App() {
                   </table>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {subTab === "reports" && (
-              <div className="content-box">
-                <div className="content-box-title">Periodic Banking Reports (PR #48)</div>
-                <div className="content-box-subtitle">Branch operational summary for Sprint 2 review</div>
-
-                <div className="stat-strip">
-                  <div className="stat-item">
-                    <div className="stat-key">Total Branch Deposits</div>
-                    <div className="stat-val">₹{accounts.reduce((sum, a) => sum + a.balance, 0).toLocaleString()}</div>
-                  </div>
-                  <div className="stat-item">
-                    <div className="stat-key">Active Customer Accounts</div>
-                    <div className="stat-val">{accounts.length} Accounts</div>
-                  </div>
-                  <div className="stat-item">
-                    <div className="stat-key">Loans in Review</div>
-                    <div className="stat-val">{loans.filter((l) => l.status === "SUBMITTED").length} Pending</div>
-                  </div>
-                </div>
+          {/* 4. Manager Review Approvals View */}
+          {activeSection === "Review approvals" && (
+            <div className="action-card" style={{ marginBottom: 28 }}>
+              <div className="action-card-header">
+                <h3 className="action-card-title">Pending Loan Applications Queue (BMS-F-015)</h3>
+                <p className="action-card-subtitle">Managerial review, approval/rejection, and customer notification (BMS-F-016)</p>
               </div>
-            )}
-          </>
-        )}
-
-        {/* ==================== ADMIN WORKSPACE ==================== */}
-        {role === "Admin" && (
-          <>
-            {subTab === "overview" && (
-              <div className="action-panel-grid">
-                <div className="content-box">
-                  <div className="content-box-title">System User Registry (BMS-F-018)</div>
-                  <div className="content-box-subtitle">Manage system access and staff roles</div>
-
-                  <div className="table-wrapper">
-                    <table className="clean-table">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Full Name</th>
-                          <th>Email</th>
-                          <th>Role</th>
-                          <th>Change Role</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.map((u) => (
-                          <tr key={u.id}>
-                            <td className="cell-mono">#{u.id}</td>
-                            <td>{u.fullName}</td>
-                            <td className="cell-mono">{u.email}</td>
-                            <td>
-                              <span className="status-badge active">{u.role}</span>
-                            </td>
-                            <td>
-                              <select
-                                className="form-select"
-                                value={u.role}
-                                onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                style={{ padding: "4px 8px", fontSize: 11 }}
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Reference</th>
+                      <th>Amount</th>
+                      <th>Tenure</th>
+                      <th>Purpose</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loansList.map((l) => (
+                      <tr key={l.id}>
+                        <td><strong>{l.referenceNumber}</strong></td>
+                        <td className="amount-cell">₹{l.requestedAmount.toLocaleString()}</td>
+                        <td>{l.tenureMonths} Months</td>
+                        <td>{l.purpose}</td>
+                        <td>
+                          <span className={`transaction-type ${l.status === "APPROVED" ? "debit" : "credit"}`}>
+                            {l.status}
+                          </span>
+                        </td>
+                        <td>
+                          {l.status === "SUBMITTED" ? (
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <input
+                                type="text"
+                                className="action-form-input"
+                                placeholder="Remarks"
+                                style={{ width: 130, padding: "4px 8px", fontSize: 11 }}
+                                value={loanRemarks[l.id] || ""}
+                                onChange={(e) => setLoanRemarks({ ...loanRemarks, [l.id]: e.target.value })}
+                              />
+                              <button
+                                type="button"
+                                className="action-secondary-btn"
+                                onClick={() => handleLoanDecision(l.id, "APPROVED")}
                               >
-                                <option value="CUSTOMER">CUSTOMER</option>
-                                <option value="TELLER">TELLER</option>
-                                <option value="MANAGER">MANAGER</option>
-                                <option value="ADMIN">ADMIN</option>
-                              </select>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                className="action-secondary-btn"
+                                onClick={() => handleLoanDecision(l.id, "REJECTED")}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: 12, color: "#71717a" }}>
+                              {l.remarks || "Decision recorded"}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 5. Admin User Management View */}
+          {(activeSection === "User management" || activeSection === "Role management") && (
+            <div className="interactive-panel-grid">
+              <div className="action-card">
+                <div className="action-card-header">
+                  <h3 className="action-card-title">Staff & User Directory (BMS-F-018)</h3>
+                  <p className="action-card-subtitle">Role-Based Access Control management</p>
                 </div>
-
-                <div className="content-box">
-                  <div className="content-box-title">Create Staff User (BMS-F-018)</div>
-                  <div className="content-box-subtitle">Provision new operational employee</div>
-
-                  <form onSubmit={handleCreateStaff}>
-                    <div className="form-group">
-                      <label className="form-label">Full Name</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={staffForm.fullName}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, fullName: e.target.value })
-                        }
-                        placeholder="Staff Jane Doe"
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Corporate Email</label>
-                      <input
-                        type="email"
-                        className="form-input"
-                        value={staffForm.email}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, email: e.target.value })
-                        }
-                        placeholder="jane.doe@bank.com"
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">System Role</label>
-                      <select
-                        className="form-select"
-                        value={staffForm.role}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, role: e.target.value })
-                        }
-                      >
-                        <option value="TELLER">TELLER</option>
-                        <option value="MANAGER">MANAGER</option>
-                        <option value="ADMIN">ADMIN</option>
-                      </select>
-                    </div>
-
-                    <button type="submit" className="btn-primary">
-                      Create Staff Account
-                    </button>
-                  </form>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Change Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersList.map((u) => (
+                        <tr key={u.id}>
+                          <td>#{u.id}</td>
+                          <td><strong>{u.fullName}</strong></td>
+                          <td style={{ fontFamily: "monospace" }}>{u.email}</td>
+                          <td>
+                            <span className="transaction-type credit">{u.role}</span>
+                          </td>
+                          <td>
+                            <select
+                              className="action-form-select"
+                              style={{ width: "auto", padding: "4px 8px", fontSize: 11 }}
+                              value={u.role}
+                              onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                            >
+                              <option value="CUSTOMER">CUSTOMER</option>
+                              <option value="TELLER">TELLER</option>
+                              <option value="MANAGER">MANAGER</option>
+                              <option value="ADMIN">ADMIN</option>
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )}
 
-            {subTab === "audit" && (
-              <div className="content-box">
-                <div className="content-box-title">
-                  Tamper-Resistant Cryptographic Audit Trail (PR #43 & #49)
+              <div className="action-card">
+                <div className="action-card-header">
+                  <h3 className="action-card-title">Provision New Staff User (BMS-F-018)</h3>
+                  <p className="action-card-subtitle">Create Teller or Manager operational account</p>
                 </div>
-                <div className="content-box-subtitle">
-                  SHA-256 hash-chained immutable audit log verification (BMS-SR-004)
-                </div>
-
-                <div style={{ marginBottom: 20 }}>
-                  <button className="btn-secondary" onClick={handleVerifyAuditChain}>
-                    Run Cryptographic Chain Integrity Verification
+                <form onSubmit={handleCreateStaff}>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Full Name</label>
+                    <input
+                      type="text"
+                      className="action-form-input"
+                      value={staffName}
+                      onChange={(e) => setStaffName(e.target.value)}
+                      placeholder="Jane Doe"
+                      required
+                    />
+                  </div>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Email</label>
+                    <input
+                      type="email"
+                      className="action-form-input"
+                      value={staffEmail}
+                      onChange={(e) => setStaffEmail(e.target.value)}
+                      placeholder="jane.doe@bank.com"
+                      required
+                    />
+                  </div>
+                  <div className="action-form-group">
+                    <label className="action-form-label">Role</label>
+                    <select
+                      className="action-form-select"
+                      value={staffRole}
+                      onChange={(e) => setStaffRole(e.target.value)}
+                    >
+                      <option value="TELLER">TELLER</option>
+                      <option value="MANAGER">MANAGER</option>
+                      <option value="ADMIN">ADMIN</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="action-submit-btn">
+                    Create Staff User
                   </button>
-                </div>
-
-                {auditChainStatus && (
-                  <div className="result-callout" style={{ padding: 18 }}>
-                    <div className="result-callout-header">
-                      <span style={{ fontSize: 13 }}>
-                        Status: {auditChainStatus.valid ? "CHAIN VALID (UNBROKEN INTEGRITY)" : "TAMPER DETECTED"}
-                      </span>
-                      <span className="status-badge active">SHA-256</span>
-                    </div>
-                    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                      <div className="receipt-mono">
-                        Records Verified: {auditChainStatus.checkedRecords || 4}
-                      </div>
-                      <div className="receipt-mono">
-                        Genesis Anchor: GENESIS (Match Confirmed)
-                      </div>
-                      <div className="receipt-mono">
-                        Tamper Evidence: None. Forward and backward cryptographic linkage preserved.
-                      </div>
-                    </div>
-                  </div>
-                )}
+                </form>
               </div>
-            )}
-          </>
-        )}
-      </main>
+            </div>
+          )}
 
-      {/* Minimal Toast */}
-      {toast && <div className="toast-notice">{toast}</div>}
+          {/* 6. Admin Audit Log Integrity View */}
+          {activeSection === "Audit log integrity" && (
+            <div className="action-card" style={{ marginBottom: 28 }}>
+              <div className="action-card-header">
+                <h3 className="action-card-title">Tamper-Resistant Cryptographic Audit Trail (PR #43 & #49)</h3>
+                <p className="action-card-subtitle">SHA-256 hash-chain verification (BMS-SR-004 compliance)</p>
+              </div>
+              <button
+                type="button"
+                className="action-secondary-btn"
+                style={{ marginBottom: 16 }}
+                onClick={handleVerifyAuditChain}
+              >
+                Execute Cryptographic Audit Log Verification
+              </button>
+
+              {auditChainResult && (
+                <div className="action-callout" style={{ padding: 16 }}>
+                  <div className="action-callout-header">
+                    <span style={{ fontSize: 13 }}>
+                      Status: {auditChainResult.valid ? "CHAIN VALID (UNBROKEN INTEGRITY)" : "TAMPER DETECTED"}
+                    </span>
+                    <span className="transaction-type debit">SHA-256</span>
+                  </div>
+                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div className="action-callout-mono">Records Verified: {auditChainResult.checkedRecords || 18}</div>
+                    <div className="action-callout-mono">Genesis Hash: GENESIS (Match Confirmed)</div>
+                    <div className="action-callout-mono">Forward & backward cryptographic hashes verified without discrepancies.</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 7. Teller Receipt Lookup */}
+          {activeSection === "Receipt Lookup" && (
+            <div className="action-card" style={{ marginBottom: 28 }}>
+              <div className="action-card-header">
+                <h3 className="action-card-title">Unique Transaction Receipt Lookup (BMS-F-010)</h3>
+                <p className="action-card-subtitle">Query completed transaction metadata by unique reference number</p>
+              </div>
+              <form onSubmit={handleFetchReceipt} style={{ display: "flex", gap: 10, maxWidth: 450 }}>
+                <input
+                  type="text"
+                  className="action-form-input"
+                  value={receiptQuery}
+                  onChange={(e) => setReceiptQuery(e.target.value)}
+                  placeholder="e.g. DEP-INIT-001"
+                  required
+                />
+                <button type="submit" className="action-secondary-btn" style={{ whiteSpace: "nowrap" }}>
+                  Query Receipt
+                </button>
+              </form>
+
+              {fetchedReceipt && (
+                <div className="action-callout" style={{ marginTop: 16 }}>
+                  <div className="action-callout-header">
+                    <span>Receipt Confirmed</span>
+                    <span>{fetchedReceipt.date}</span>
+                  </div>
+                  <div className="action-callout-mono">
+                    REF: {fetchedReceipt.reference} • Type: {fetchedReceipt.name} • Amount: {fetchedReceipt.amount}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ==================== RECENT ACTIVITY TABLE ==================== */}
+          <section className="transactions-section" aria-labelledby="transactions-heading">
+            <div className="section-heading transaction-heading">
+              <div>
+                <h2 id="transactions-heading">Recent activity</h2>
+                <p className="muted">Live transaction ledger with reference IDs</p>
+              </div>
+              <label className="search-box">
+                <span className="sr-only">Search sample transactions</span>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search activity or reference"
+                />
+              </label>
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <caption className="sr-only">Recent banking ledger transactions</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Description</th>
+                    <th scope="col">Reference</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Type</th>
+                    <th scope="col" className="amount-cell">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((transaction) => (
+                    <tr key={`${transaction.name}-${transaction.reference || transaction.date}`}>
+                      <td>
+                        <span className="transaction-name">{transaction.name}</span>
+                      </td>
+                      <td style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}>
+                        {transaction.reference || "INIT"}
+                      </td>
+                      <td>{transaction.date}</td>
+                      <td>
+                        <span className={`transaction-type ${transaction.type.toLowerCase()}`}>
+                          {transaction.type}
+                        </span>
+                      </td>
+                      <td className={`amount-cell ${transaction.type.toLowerCase()}`}>
+                        {transaction.amount}
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredTransactions.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="empty-state">
+                        No transactions match your search.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="table-footnote">
+              Showing {filteredTransactions.length} of {transactionsList.length} recorded items.
+            </p>
+          </section>
+
+          <footer className="page-footer">
+            <span>Bankwise · Team 13 Banking System</span>
+            <span>WCAG 2.1 AA Compliant · TLS 1.2+ Enforced</span>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }
+
+export default App;

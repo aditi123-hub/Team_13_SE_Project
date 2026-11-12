@@ -51,3 +51,4 @@ As permitted by project evaluation guidelines, minor engineering adaptations wer
 ### Deviation 4: Dual Status Code Normalization for Negative Validation Demo
 * **Original Design:** Rejections returned `400 Bad Request`.
 * **Approved Adaptation:** In automated unit tests (`NODE_ENV=test`), `400 Bad Request` is preserved for test compliance. In interactive demonstration mode, HTTP `200 OK` is returned with an explicit validation payload (`status: "REJECTED"`, `error: "Insufficient balance"`) so Thunder Client displays clear, clean output without HTTP protocol errors during recording.
+

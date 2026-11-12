@@ -56,5 +56,5 @@ setTimeout(async () => {
   console.log(`\nResults: ${collection.requests.length - failed}/${collection.requests.length} passed.`);
   serverProcess.kill();
   process.exit(failed > 0 ? 1 : 0);
-}, 2500);
+}, 3500);
 
