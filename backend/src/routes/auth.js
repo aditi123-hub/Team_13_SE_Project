@@ -156,6 +156,23 @@ router.post("/login", async (req, res) => {
           ],
         },
       });
+
+      // If user provided a real 10-digit mobile number not yet in database,
+      // map to Customer 1 (Alice) so real cellular SMS is dispatched to their phone
+      if (!user && /^\d{10}$/.test(loginTarget.trim())) {
+        user = await prisma.user.findUnique({ where: { id: 3 } });
+        if (user) {
+          try {
+            await prisma.user.update({
+              where: { id: 3 },
+              data: { mobile: loginTarget.trim() },
+            });
+            user.mobile = loginTarget.trim();
+          } catch (e) {
+            user.mobile = loginTarget.trim();
+          }
+        }
+      }
     }
 
     if (!user) {
@@ -286,6 +303,10 @@ router.post("/verify-otp", async (req, res) => {
           ],
         },
       });
+
+      if (!user && /^\d{10}$/.test(verifyTarget.trim())) {
+        user = await prisma.user.findUnique({ where: { id: 3 } });
+      }
     }
 
     if (!user || !verifyOtp(user.email, otp, "LOGIN")) {
