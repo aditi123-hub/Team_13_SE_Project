@@ -214,6 +214,7 @@ async function measureBenchmark(apiCall) {
 }
 
 function App() {
+  const [viewMode, setViewMode] = useState("LOGIN"); // "LOGIN" or "DASHBOARD"
   const [role, setRole] = useState("Customer");
   const [highContrast, setHighContrast] = useState(false);
   const [activeSection, setActiveSection] = useState("Overview");
@@ -430,14 +431,15 @@ function App() {
       setRole("Customer");
       setAuthenticatedUser({
         name: "Demo Customer 1 (Alice)",
-        mobile: "+91 90000 00003",
-        email: "customer1@bank.com",
+        mobile: incomingSms?.mobile || (loginIdentifier.startsWith("9") ? "+91 " + loginIdentifier : "+91 90000 00003"),
+        email: loginIdentifier.includes("@") ? loginIdentifier : "customer1@bank.com",
         role: "Customer",
       });
       setNotice("✓ Mobile 2FA Authenticated! Welcome to Bankwise Customer Workspace.");
       setTimeout(() => {
+        setViewMode("DASHBOARD");
         setLoginModalOpen(false);
-      }, 1600);
+      }, 700);
     } else {
       setLoginError("Invalid or expired OTP. Please try again or click Auto-Fill.");
     }
@@ -872,67 +874,260 @@ function App() {
         </div>
       )}
 
-      <header className="topbar">
-        <a className="brand" href="#main-content" aria-label="Bankwise home">
-          <span className="brand-mark" aria-hidden="true">
-            B
-          </span>
-          <span>
-            bankwise<span className="brand-period">.</span>
-          </span>
-        </a>
+      {viewMode === "LOGIN" ? (
+        <div className="login-page-wrapper">
+          {/* Top Brand Logo */}
+          <div className="login-brand-header">
+            <div className="login-brand-logo" aria-hidden="true">
+              B
+            </div>
+            <div className="login-brand-text">
+              bankwise<span className="login-brand-period">.</span>
+            </div>
+          </div>
 
-        <div className="topbar-tools">
-          <button
-            className="topbar-action-pill"
-            type="button"
-            onClick={() => {
-              setLoginModalOpen(true);
-              setLoginStage("CREDENTIALS");
-            }}
-          >
-            <span className="dot-pulse" /> 📱 Mobile OTP Login
-          </button>
+          {/* Aditi's Exact Login Card */}
+          <div className="login-card">
+            <p className="login-eyebrow">
+              {loginStage === "OTP_ENTRY" ? "TWO-FACTOR AUTHENTICATION" : "BANK MANAGEMENT SYSTEM"}
+            </p>
+            <h1 className="login-title">
+              {loginStage === "OTP_ENTRY" ? "Enter verification code" : "Welcome back"}
+            </h1>
+            <p className="login-subtitle">
+              {loginStage === "OTP_ENTRY"
+                ? `Enter the 6-digit SMS OTP sent to ${incomingSms?.mobile || "+91 " + loginIdentifier}.`
+                : "Sign in securely to access your banking workspace."}
+            </p>
 
-          <button
-            className="topbar-action-pill highlight"
-            type="button"
-            onClick={() => selectSection("🛡️ Solved Issues (14/14)")}
-          >
-            🛡️ 14 Issues Solved
-          </button>
+            {loginStage === "CREDENTIALS" && (
+              <form onSubmit={handleRequestLoginOtp}>
+                <div className="login-form-group">
+                  <label className="login-label" htmlFor="login-email">
+                    Email address
+                  </label>
+                  <input
+                    id="login-email"
+                    type="text"
+                    className="login-input"
+                    value={loginIdentifier}
+                    onChange={(e) => setLoginIdentifier(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
 
-          <button
-            className="contrast-button"
-            type="button"
-            aria-pressed={highContrast}
-            onClick={() => setHighContrast((current) => !current)}
-          >
-            {highContrast ? "Standard contrast" : "High contrast"}
-          </button>
+                <div className="login-form-group">
+                  <label className="login-label" htmlFor="login-password">
+                    Password
+                  </label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    className="login-input"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
 
-          <label className="role-picker">
-            <span>Preview role</span>
-            <select
-              value={role}
-              onChange={(event) => {
-                setRole(event.target.value);
-                setActiveSection("Overview");
-              }}
+                {loginError && (
+                  <p style={{ color: "#ef4444", fontSize: 12, fontWeight: 600, margin: "0 0 14px", textAlign: "left" }}>
+                    {loginError}
+                  </p>
+                )}
+
+                <button type="submit" className="login-submit-btn">
+                  Continue
+                </button>
+              </form>
+            )}
+
+            {loginStage === "OTP_ENTRY" && (
+              <form onSubmit={handleVerifyLoginOtp}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, color: "#64748b" }}>
+                    SMS delivered to: <strong>{incomingSms?.mobile || "+91 " + loginIdentifier}</strong>
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>
+                    ⏱ {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
+                  </span>
+                </div>
+
+                <div className="otp-digit-container" style={{ margin: "14px 0" }}>
+                  {loginOtpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      id={`screen-otp-box-${idx}`}
+                      type="text"
+                      maxLength={1}
+                      className="otp-digit-box"
+                      value={digit}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const updated = [...loginOtpDigits];
+                        updated[idx] = val;
+                        setLoginOtpDigits(updated);
+                        if (val && idx < 5) {
+                          document.getElementById(`screen-otp-box-${idx + 1}`)?.focus();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !loginOtpDigits[idx] && idx > 0) {
+                          document.getElementById(`screen-otp-box-${idx - 1}`)?.focus();
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {loginError && (
+                  <p style={{ color: "#ef4444", fontSize: 12, fontWeight: 600, margin: "0 0 14px" }}>
+                    {loginError}
+                  </p>
+                )}
+
+                <button type="submit" className="login-submit-btn">
+                  Verify & Enter Workspace
+                </button>
+
+                <div style={{ marginTop: 14, textAlign: "center" }}>
+                  <button
+                    type="button"
+                    className="login-link-btn"
+                    onClick={handleRequestLoginOtp}
+                  >
+                    Resend code
+                  </button>
+                  <span style={{ margin: "0 8px", color: "#cbd5e1" }}>•</span>
+                  <button
+                    type="button"
+                    className="login-link-btn"
+                    onClick={() => setLoginStage("CREDENTIALS")}
+                  >
+                    Change email/mobile
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="login-footer-links">
+              <span>New to Bankwise?</span>
+              <button
+                type="button"
+                className="login-link-btn"
+                onClick={() => setNotice("Registration available via POST /auth/register")}
+              >
+                Create an account
+              </button>
+            </div>
+
+            <p className="login-subfooter">
+              Bankwise · Secure banking workspace
+            </p>
+          </div>
+
+          {/* Accessibility & Quick Switch Controls */}
+          <div style={{ marginTop: 24, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+            <label className="role-picker">
+              <span>Preview role</span>
+              <select
+                value={role}
+                onChange={(event) => {
+                  setRole(event.target.value);
+                  setViewMode("DASHBOARD");
+                }}
+              >
+                {Object.keys(roles).map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              className="contrast-button"
+              type="button"
+              aria-pressed={highContrast}
+              onClick={() => setHighContrast((c) => !c)}
             >
-              {Object.keys(roles).map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
+              {highContrast ? "Standard contrast" : "High contrast"}
+            </button>
 
-          <div className="avatar" aria-label="Demo user" title={authenticatedUser.name}>
-            {role.substring(0, 2).toUpperCase()}
+            <button
+              type="button"
+              className="topbar-action-pill highlight"
+              onClick={() => setViewMode("DASHBOARD")}
+            >
+              Direct to Dashboard ➔
+            </button>
           </div>
         </div>
-      </header>
+      ) : (
+        <div style={{ width: "100%", display: "contents" }}>
+          <header className="topbar">
+            <a className="brand" href="#main-content" aria-label="Bankwise home">
+              <span className="brand-mark" aria-hidden="true">
+                B
+              </span>
+              <span>
+                bankwise<span className="brand-period">.</span>
+              </span>
+            </a>
+
+            <div className="topbar-tools">
+              <button
+                className="topbar-action-pill"
+                type="button"
+                onClick={() => {
+                  setViewMode("LOGIN");
+                  setLoginStage("CREDENTIALS");
+                }}
+              >
+                🚪 Sign Out / Login Page
+              </button>
+
+              <button
+                className="topbar-action-pill highlight"
+                type="button"
+                onClick={() => selectSection("🛡️ Solved Issues (14/14)")}
+              >
+                🛡️ 14 Issues Solved
+              </button>
+
+              <button
+                className="contrast-button"
+                type="button"
+                aria-pressed={highContrast}
+                onClick={() => setHighContrast((current) => !current)}
+              >
+                {highContrast ? "Standard contrast" : "High contrast"}
+              </button>
+
+              <label className="role-picker">
+                <span>Preview role</span>
+                <select
+                  value={role}
+                  onChange={(event) => {
+                    setRole(event.target.value);
+                    setActiveSection("Overview");
+                  }}
+                >
+                  {Object.keys(roles).map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="avatar" aria-label="Demo user" title={authenticatedUser.name}>
+                {role.substring(0, 2).toUpperCase()}
+              </div>
+            </div>
+          </header>
 
       <div className="layout">
         <aside
@@ -2100,6 +2295,8 @@ function App() {
         </main>
       </div>
     </div>
+  )}
+</div>
   );
 }
 
