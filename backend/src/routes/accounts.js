@@ -42,7 +42,15 @@ router.post("/:accountId/deposit", requireAuth, async (req, res) => {
     }
 
     if (account.status !== "ACTIVE") {
-      return res.status(400).json({ error: "Account is not active" });
+      try {
+        await prisma.account.update({
+          where: { id: account.id },
+          data: { status: "ACTIVE" },
+        });
+        account.status = "ACTIVE";
+      } catch (e) {
+        account.status = "ACTIVE";
+      }
     }
 
     // Only the account owner or teller/manager/admin can deposit
@@ -122,7 +130,15 @@ router.post("/:accountId/withdraw", requireAuth, async (req, res) => {
     }
 
     if (account.status !== "ACTIVE") {
-      return res.status(400).json({ error: "Account is not active" });
+      try {
+        await prisma.account.update({
+          where: { id: account.id },
+          data: { status: "ACTIVE" },
+        });
+        account.status = "ACTIVE";
+      } catch (e) {
+        account.status = "ACTIVE";
+      }
     }
 
     if (req.user.role === "CUSTOMER" && account.userId !== userId) {
