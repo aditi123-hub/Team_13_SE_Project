@@ -1295,6 +1295,104 @@ tbody tr:hover td {
   color: #94a3b8;
 }
 
+/* Phone input with country code badge */
+.phone-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.phone-input-wrap:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.phone-prefix {
+  padding: 11px 12px;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 13.5px;
+  border-right: 1px solid #e2e8f0;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.phone-input-field {
+  flex: 1;
+  border: none;
+  padding: 11px 14px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  letter-spacing: 0.5px;
+  background: transparent;
+}
+
+/* Auth Mode & Method Tabs */
+.auth-mode-tabs {
+  display: flex;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.auth-tab-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Fast2SMS Key Pill */
+.sms-key-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: all 0.15s ease;
+}
+
+.sms-key-pill:hover {
+  background: #dbeafe;
+}
+
+.sms-key-pill.configured {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
 /* ==================== TOPBAR QUICK PILLS ==================== */
 .topbar-action-pill {
   display: inline-flex;

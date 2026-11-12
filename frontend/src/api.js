@@ -10,7 +10,8 @@ const TOKENS = {
 };
 
 async function request(endpoint, options = {}, role = "Customer") {
-  const token = TOKENS[role] || TOKENS.Customer;
+  const dynamicToken = typeof window !== "undefined" ? sessionStorage.getItem("bankwise_token") : null;
+  const token = dynamicToken || TOKENS[role] || TOKENS.Customer;
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
@@ -37,14 +38,44 @@ export const api = {
       }),
     }),
 
+  mobileLogin: (phone) =>
+    request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        phone: String(phone).trim(),
+      }),
+    }),
+
   verifyLoginOtp: (identifier, otp) =>
     request("/auth/verify-otp", {
       method: "POST",
       body: JSON.stringify({
         email: identifier,
         identifier: identifier,
+        phone: identifier,
         otp: String(otp).trim(),
       }),
+    }),
+
+  requestRegisterOtp: (userData) =>
+    request("/auth/register/request-otp", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    }),
+
+  verifyRegister: (registerData) =>
+    request("/auth/register/verify", {
+      method: "POST",
+      body: JSON.stringify(registerData),
+    }),
+
+  getSmsConfig: () =>
+    request("/auth/sms-config", { method: "GET" }),
+
+  setSmsConfig: (apiKey) =>
+    request("/auth/sms-config", {
+      method: "POST",
+      body: JSON.stringify({ apiKey }),
     }),
 
   deposit: (accountId, amount) =>

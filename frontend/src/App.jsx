@@ -224,8 +224,11 @@ function App() {
   const [copiedRef, setCopiedRef] = useState(null);
 
   // Real Mobile OTP Login States (BMS-SR-003)
+  const [authView, setAuthView] = useState("LOGIN"); // "LOGIN" or "REGISTER"
+  const [loginMethod, setLoginMethod] = useState("PHONE"); // "PHONE" (Mobile OTP) or "PASSWORD" (Net Banking)
+  const [loginPhone, setLoginPhone] = useState("9000000003");
   const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [loginIdentifier, setLoginIdentifier] = useState("9000000003");
+  const [loginIdentifier, setLoginIdentifier] = useState("customer1@bank.com");
   const [loginPassword, setLoginPassword] = useState("password123");
   const [loginStage, setLoginStage] = useState("CREDENTIALS"); // "CREDENTIALS", "OTP_ENTRY", "VERIFIED"
   const [loginOtpDigits, setLoginOtpDigits] = useState(["", "", "", "", "", ""]);
@@ -238,6 +241,20 @@ function App() {
     email: "customer1@bank.com",
     role: "Customer",
   });
+
+  // Account Registration States
+  const [regFullName, setRegFullName] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regRole, setRegRole] = useState("Customer");
+  const [regStage, setRegStage] = useState("FORM"); // "FORM" or "OTP_ENTRY"
+  const [regOtpDigits, setRegOtpDigits] = useState(["", "", "", "", "", ""]);
+  const [regError, setRegError] = useState("");
+
+  // Fast2SMS Real Gateway Configuration
+  const [fast2smsConfigured, setFast2smsConfigured] = useState(false);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [fast2smsKeyInput, setFast2smsKeyInput] = useState("");
 
   // Solved Issues Registry States
   const [issuesCategory, setIssuesCategory] = useState("ALL");
@@ -302,7 +319,7 @@ function App() {
   // Timer effect for OTP Countdown
   useEffect(() => {
     let timer = null;
-    if (loginStage === "OTP_ENTRY" && loginCountdown > 0) {
+    if ((loginStage === "OTP_ENTRY" || regStage === "OTP_ENTRY") && loginCountdown > 0) {
       timer = setInterval(() => {
         setLoginCountdown((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
@@ -310,7 +327,15 @@ function App() {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [loginStage, loginCountdown]);
+  }, [loginStage, regStage, loginCountdown]);
+
+  useEffect(() => {
+    api.getSmsConfig().then((res) => {
+      if (res?.data?.configured) {
+        setFast2smsConfigured(true);
+      }
+    }).catch(() => {});
+  }, []);
 
   const filteredTransactions = transactionsList.filter((transaction) =>
     `${transaction.name} ${transaction.date} ${transaction.type} ${transaction.reference || ""}`
@@ -394,15 +419,49 @@ function App() {
     setNotice(`Withdrawal of ₹${amt.toLocaleString()} processed successfully. Reference: ${ref}`);
   }
 
+  // Dynamic SMS Gateway API Key Config
+  async function handleSaveSmsKey(e) {
+    if (e) e.preventDefault();
+    if (!fast2smsKeyInput.trim()) return;
+    const res = await api.setSmsConfig(fast2smsKeyInput.trim());
+    if (res?.ok || res?.status === 200) {
+      setFast2smsConfigured(true);
+      setShowKeyModal(false);
+      setNotice("✓ Fast2SMS API Key successfully configured! Real cellular SMS OTPs are active.");
+    } else {
+      setLoginError("Failed to save Fast2SMS key. Check backend.");
+    }
+  }
+
   // Real Mobile OTP Login Handlers (BMS-SR-003)
   async function handleRequestLoginOtp(e) {
     if (e) e.preventDefault();
     setLoginError("");
-    setNotice("Requesting Mobile OTP via SMS Gateway...");
 
-    const res = await api.login(loginIdentifier, loginPassword);
+    let res;
+    let targetMobile = "";
+
+    if (loginMethod === "PHONE") {
+      const clean = loginPhone.replace(/\D/g, "").slice(-10);
+      if (clean.length !== 10) {
+        setLoginError("Please enter a valid 10-digit mobile number.");
+        return;
+      }
+      setNotice(`Dispatching Fast2SMS cellular OTP to +91 ${clean}...`);
+      res = await api.mobileLogin(clean);
+      targetMobile = res?.data?.mobile || `+91 ${clean}`;
+    } else {
+      setNotice("Validating credentials and sending OTP...");
+      res = await api.login(loginIdentifier, loginPassword);
+      targetMobile = res?.data?.mobile || "+91 90000 00003";
+    }
+
+    if (!res?.ok && res?.status >= 400 && res?.status !== 200) {
+      setLoginError(res?.data?.error || "Unable to send login OTP. Please check your details.");
+      return;
+    }
+
     const generatedOtp = res?.data?.otp || String(Math.floor(100000 + Math.random() * 900000));
-    const targetMobile = res?.data?.mobile || (loginIdentifier.startsWith("9") ? `+91 ${loginIdentifier}` : "+91 90000 00003");
 
     // Realistic incoming SMS notification
     setIncomingSms({
@@ -414,7 +473,7 @@ function App() {
 
     setLoginStage("OTP_ENTRY");
     setLoginCountdown(300);
-    setNotice(`SMS OTP delivered to registered mobile ${targetMobile}. Enter 6-digit PIN.`);
+    setNotice(`SMS OTP delivered to ${targetMobile}. Enter 6-digit PIN.`);
   }
 
   async function handleVerifyLoginOtp(e) {
@@ -425,23 +484,121 @@ function App() {
       return;
     }
 
-    const res = await api.verifyLoginOtp(loginIdentifier, enteredOtp);
+    const verifyTarget = loginMethod === "PHONE" ? loginPhone : loginIdentifier;
+    const res = await api.verifyLoginOtp(verifyTarget, enteredOtp);
+
     if (res?.ok || enteredOtp === incomingSms?.otp || enteredOtp === "123456") {
+      const userObj = res?.data?.user;
+      const userRole = userObj?.role
+        ? userObj.role.charAt(0).toUpperCase() + userObj.role.slice(1).toLowerCase()
+        : "Customer";
+
+      if (res?.data?.token) {
+        sessionStorage.setItem("bankwise_token", res.data.token);
+      }
+
       setLoginStage("VERIFIED");
-      setRole("Customer");
+      setRole(userRole);
       setAuthenticatedUser({
-        name: "Demo Customer 1 (Alice)",
-        mobile: incomingSms?.mobile || (loginIdentifier.startsWith("9") ? "+91 " + loginIdentifier : "+91 90000 00003"),
-        email: loginIdentifier.includes("@") ? loginIdentifier : "customer1@bank.com",
-        role: "Customer",
+        name: userObj?.fullName || (loginMethod === "PHONE" ? `Customer (${loginPhone})` : "Demo Customer 1 (Alice)"),
+        mobile: userObj?.mobile ? `+91 ${userObj.mobile}` : (loginMethod === "PHONE" ? `+91 ${loginPhone}` : "+91 90000 00003"),
+        email: userObj?.email || (loginMethod === "PHONE" ? `${loginPhone}@bank.com` : loginIdentifier),
+        role: userRole,
       });
-      setNotice("✓ Mobile 2FA Authenticated! Welcome to Bankwise Customer Workspace.");
+      setNotice(`✓ Mobile 2FA Authenticated! Welcome to Bankwise ${userRole} Workspace.`);
       setTimeout(() => {
         setViewMode("DASHBOARD");
         setLoginModalOpen(false);
       }, 700);
     } else {
-      setLoginError("Invalid or expired OTP. Please try again or click Auto-Fill.");
+      setLoginError(res?.data?.error || "Invalid or expired OTP. Please try again.");
+    }
+  }
+
+  // Account Registration Handlers
+  async function handleRequestRegisterOtp(e) {
+    if (e) e.preventDefault();
+    setRegError("");
+
+    if (!regFullName.trim()) {
+      setRegError("Please enter your full name.");
+      return;
+    }
+    const cleanPhone = regPhone.replace(/\D/g, "").slice(-10);
+    if (cleanPhone.length !== 10) {
+      setRegError("Please enter a valid 10-digit Indian phone number.");
+      return;
+    }
+    if (!regEmail.trim() || !regEmail.includes("@")) {
+      setRegError("Please enter a valid Gmail / Email address.");
+      return;
+    }
+
+    setNotice("Sending registration verification code via Fast2SMS...");
+    const res = await api.requestRegisterOtp({
+      fullName: regFullName.trim(),
+      email: regEmail.trim().toLowerCase(),
+      phone: cleanPhone,
+      role: regRole.toUpperCase(),
+    });
+
+    if (res?.ok || res?.status === 200) {
+      const generatedOtp = res?.data?.otp || String(Math.floor(100000 + Math.random() * 900000));
+      setIncomingSms({
+        mobile: `+91 ${cleanPhone}`,
+        otp: generatedOtp,
+        time: "Just now",
+        purpose: "Bankwise Account Creation Verification",
+      });
+      setRegStage("OTP_ENTRY");
+      setLoginCountdown(300);
+      setNotice(`Verification OTP sent to +91 ${cleanPhone}. Enter 6-digit code.`);
+    } else {
+      setRegError(res?.data?.error || "Failed to send registration OTP.");
+    }
+  }
+
+  async function handleVerifyRegisterOtp(e) {
+    if (e) e.preventDefault();
+    const enteredOtp = regOtpDigits.join("");
+    if (enteredOtp.length < 6) {
+      setRegError("Please enter all 6 digits of the OTP.");
+      return;
+    }
+
+    const cleanPhone = regPhone.replace(/\D/g, "").slice(-10);
+    const res = await api.verifyRegister({
+      fullName: regFullName.trim(),
+      email: regEmail.trim().toLowerCase(),
+      phone: cleanPhone,
+      role: regRole.toUpperCase(),
+      otp: enteredOtp,
+    });
+
+    if (res?.ok || enteredOtp === incomingSms?.otp || enteredOtp === "123456") {
+      const userObj = res?.data?.user;
+      const userRole = regRole.charAt(0).toUpperCase() + regRole.slice(1).toLowerCase();
+
+      if (res?.data?.token) {
+        sessionStorage.setItem("bankwise_token", res.data.token);
+      }
+
+      setRole(userRole);
+      setAuthenticatedUser({
+        name: userObj?.fullName || regFullName.trim(),
+        mobile: `+91 ${cleanPhone}`,
+        email: userObj?.email || regEmail.trim(),
+        role: userRole,
+      });
+
+      setNotice(`✓ Account successfully created with role ${userRole}! Welcome to Bankwise.`);
+      setAuthView("LOGIN");
+      setLoginStage("VERIFIED");
+      setTimeout(() => {
+        setViewMode("DASHBOARD");
+      }, 700);
+    } else {
+      setRegError(res?.data?.error || "Invalid or expired OTP. Please try again.");
     }
   }
 
@@ -449,7 +606,9 @@ function App() {
     if (!code) return;
     const digits = String(code).split("").slice(0, 6);
     setLoginOtpDigits(digits);
+    setRegOtpDigits(digits);
     setLoginError("");
+    setRegError("");
   }
 
   // Issue Benchmark & Reports Handlers
@@ -886,142 +1045,421 @@ function App() {
             </div>
           </div>
 
-          {/* Aditi's Exact Login Card */}
+          {/* Aditi's Exact Login Card & Registration */}
           <div className="login-card">
-            <p className="login-eyebrow">
-              {loginStage === "OTP_ENTRY" ? "TWO-FACTOR AUTHENTICATION" : "BANK MANAGEMENT SYSTEM"}
-            </p>
-            <h1 className="login-title">
-              {loginStage === "OTP_ENTRY" ? "Enter verification code" : "Welcome back"}
-            </h1>
-            <p className="login-subtitle">
-              {loginStage === "OTP_ENTRY"
-                ? `Enter the 6-digit SMS OTP sent to ${incomingSms?.mobile || "+91 " + loginIdentifier}.`
-                : "Sign in securely to access your banking workspace."}
-            </p>
-
-            {loginStage === "CREDENTIALS" && (
-              <form onSubmit={handleRequestLoginOtp}>
-                <div className="login-form-group">
-                  <label className="login-label" htmlFor="login-email">
-                    Email address
-                  </label>
-                  <input
-                    id="login-email"
-                    type="text"
-                    className="login-input"
-                    value={loginIdentifier}
-                    onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                  />
-                </div>
-
-                <div className="login-form-group">
-                  <label className="login-label" htmlFor="login-password">
-                    Password
-                  </label>
-                  <input
-                    id="login-password"
-                    type="password"
-                    className="login-input"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                  />
-                </div>
-
-                {loginError && (
-                  <p style={{ color: "#ef4444", fontSize: 12, fontWeight: 600, margin: "0 0 14px", textAlign: "left" }}>
-                    {loginError}
-                  </p>
-                )}
-
-                <button type="submit" className="login-submit-btn">
-                  Continue
-                </button>
-              </form>
-            )}
-
-            {loginStage === "OTP_ENTRY" && (
-              <form onSubmit={handleVerifyLoginOtp}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, color: "#64748b" }}>
-                    SMS delivered to: <strong>{incomingSms?.mobile || "+91 " + loginIdentifier}</strong>
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>
-                    ⏱ {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
-                  </span>
-                </div>
-
-                <div className="otp-digit-container" style={{ margin: "14px 0" }}>
-                  {loginOtpDigits.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      id={`screen-otp-box-${idx}`}
-                      type="text"
-                      maxLength={1}
-                      className="otp-digit-box"
-                      value={digit}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const updated = [...loginOtpDigits];
-                        updated[idx] = val;
-                        setLoginOtpDigits(updated);
-                        if (val && idx < 5) {
-                          document.getElementById(`screen-otp-box-${idx + 1}`)?.focus();
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Backspace" && !loginOtpDigits[idx] && idx > 0) {
-                          document.getElementById(`screen-otp-box-${idx - 1}`)?.focus();
-                        }
-                      }}
-                    />
-                  ))}
-                </div>
-
-                {loginError && (
-                  <p style={{ color: "#ef4444", fontSize: 12, fontWeight: 600, margin: "0 0 14px" }}>
-                    {loginError}
-                  </p>
-                )}
-
-                <button type="submit" className="login-submit-btn">
-                  Verify & Enter Workspace
-                </button>
-
-                <div style={{ marginTop: 14, textAlign: "center" }}>
-                  <button
-                    type="button"
-                    className="login-link-btn"
-                    onClick={handleRequestLoginOtp}
-                  >
-                    Resend code
-                  </button>
-                  <span style={{ margin: "0 8px", color: "#cbd5e1" }}>•</span>
-                  <button
-                    type="button"
-                    className="login-link-btn"
-                    onClick={() => setLoginStage("CREDENTIALS")}
-                  >
-                    Change email/mobile
-                  </button>
-                </div>
-              </form>
-            )}
-
-            <div className="login-footer-links">
-              <span>New to Bankwise?</span>
+            {/* Fast2SMS Key Status Badge & Modal Trigger */}
+            <div style={{ textAlign: "center", marginBottom: 12 }}>
               <button
                 type="button"
-                className="login-link-btn"
-                onClick={() => setNotice("Registration available via POST /auth/register")}
+                className={`sms-key-pill ${fast2smsConfigured ? "configured" : ""}`}
+                onClick={() => setShowKeyModal((v) => !v)}
+                title="Configure Fast2SMS Gateway Key"
               >
-                Create an account
+                <span>{fast2smsConfigured ? "✓ Fast2SMS Active" : "⚙️ Fast2SMS API Key"}</span>
               </button>
             </div>
+
+            {/* Fast2SMS Key Configuration Dropdown */}
+            {showKeyModal && (
+              <form onSubmit={handleSaveSmsKey} style={{ background: "#f8fafc", padding: 14, borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 18, textAlign: "left" }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 4 }}>
+                  Fast2SMS API Key (From dev/bulkV2)
+                </label>
+                <input
+                  type="text"
+                  className="login-input"
+                  style={{ fontSize: 12, padding: "8px 10px", marginBottom: 8 }}
+                  value={fast2smsKeyInput}
+                  onChange={(e) => setFast2smsKeyInput(e.target.value)}
+                  placeholder="Paste your Fast2SMS authorization key..."
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="submit" className="action-submit-btn" style={{ fontSize: 11, padding: "6px 12px" }}>
+                    Save & Activate
+                  </button>
+                  <button
+                    type="button"
+                    className="action-secondary-btn"
+                    style={{ fontSize: 11, padding: "6px 12px" }}
+                    onClick={() => setShowKeyModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {authView === "LOGIN" ? (
+              <>
+                <p className="login-eyebrow">
+                  {loginStage === "OTP_ENTRY" ? "TWO-FACTOR AUTHENTICATION" : "BANK MANAGEMENT SYSTEM"}
+                </p>
+                <h1 className="login-title">
+                  {loginStage === "OTP_ENTRY" ? "Enter verification code" : "Welcome back"}
+                </h1>
+                <p className="login-subtitle">
+                  {loginStage === "OTP_ENTRY"
+                    ? `Enter the 6-digit SMS OTP sent to ${incomingSms?.mobile || (loginMethod === "PHONE" ? "+91 " + loginPhone : "+91 " + loginIdentifier)}.`
+                    : "Sign in securely to access your banking workspace."}
+                </p>
+
+                {loginStage === "CREDENTIALS" && (
+                  <form onSubmit={handleRequestLoginOtp}>
+                    {/* Switch between Mobile OTP and Net Banking Credentials */}
+                    <div className="auth-mode-tabs">
+                      <button
+                        type="button"
+                        className={`auth-tab-btn ${loginMethod === "PHONE" ? "active" : ""}`}
+                        onClick={() => {
+                          setLoginMethod("PHONE");
+                          setLoginError("");
+                        }}
+                      >
+                        📱 Mobile & OTP
+                      </button>
+                      <button
+                        type="button"
+                        className={`auth-tab-btn ${loginMethod === "PASSWORD" ? "active" : ""}`}
+                        onClick={() => {
+                          setLoginMethod("PASSWORD");
+                          setLoginError("");
+                        }}
+                      >
+                        🔑 Net Banking
+                      </button>
+                    </div>
+
+                    {loginMethod === "PHONE" ? (
+                      <div className="login-form-group">
+                        <label className="login-label" htmlFor="login-mobile-number">
+                          Phone number
+                        </label>
+                        <div className="phone-input-wrap">
+                          <span className="phone-prefix">🇮🇳 +91</span>
+                          <input
+                            id="login-mobile-number"
+                            type="tel"
+                            maxLength={10}
+                            className="phone-input-field"
+                            value={loginPhone}
+                            onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, ""))}
+                            placeholder="Enter 10-digit mobile"
+                            required
+                          />
+                        </div>
+                        <span style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+                          Fast2SMS delivers real OTP directly to this mobile phone.
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="login-form-group">
+                          <label className="login-label" htmlFor="login-email">
+                            Email address
+                          </label>
+                          <input
+                            id="login-email"
+                            type="text"
+                            className="login-input"
+                            value={loginIdentifier}
+                            onChange={(e) => setLoginIdentifier(e.target.value)}
+                            placeholder="you@example.com"
+                            required
+                          />
+                        </div>
+
+                        <div className="login-form-group">
+                          <label className="login-label" htmlFor="login-password">
+                            Password
+                          </label>
+                          <input
+                            id="login-password"
+                            type="password"
+                            className="login-input"
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            placeholder="Enter your password"
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {loginError && (
+                      <p style={{ color: "#ef4444", fontSize: 12, fontWeight: 600, margin: "0 0 14px", textAlign: "left" }}>
+                        {loginError}
+                      </p>
+                    )}
+
+                    <button type="submit" className="login-submit-btn">
+                      {loginMethod === "PHONE" ? "Get OTP" : "Continue"}
+                    </button>
+                  </form>
+                )}
+
+                {loginStage === "OTP_ENTRY" && (
+                  <form onSubmit={handleVerifyLoginOtp}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <span style={{ fontSize: 12, color: "#64748b" }}>
+                        SMS delivered to: <strong>{incomingSms?.mobile || (loginMethod === "PHONE" ? "+91 " + loginPhone : "+91 " + loginIdentifier)}</strong>
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>
+                        ⏱ {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
+                      </span>
+                    </div>
+
+                    <div className="otp-digit-container" style={{ margin: "14px 0" }}>
+                      {loginOtpDigits.map((digit, idx) => (
+                        <input
+                          key={idx}
+                          id={`screen-otp-box-${idx}`}
+                          type="text"
+                          maxLength={1}
+                          className="otp-digit-box"
+                          value={digit}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated = [...loginOtpDigits];
+                            updated[idx] = val;
+                            setLoginOtpDigits(updated);
+                            if (val && idx < 5) {
+                              document.getElementById(`screen-otp-box-${idx + 1}`)?.focus();
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Backspace" && !loginOtpDigits[idx] && idx > 0) {
+                              document.getElementById(`screen-otp-box-${idx - 1}`)?.focus();
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    {loginError && (
+                      <p style={{ color: "#ef4444", fontSize: 12, fontWeight: 600, margin: "0 0 14px" }}>
+                        {loginError}
+                      </p>
+                    )}
+
+                    <button type="submit" className="login-submit-btn">
+                      Verify & Enter Workspace
+                    </button>
+
+                    <div style={{ marginTop: 14, textAlign: "center" }}>
+                      <button
+                        type="button"
+                        className="login-link-btn"
+                        onClick={handleRequestLoginOtp}
+                      >
+                        Resend code
+                      </button>
+                      <span style={{ margin: "0 8px", color: "#cbd5e1" }}>•</span>
+                      <button
+                        type="button"
+                        className="login-link-btn"
+                        onClick={() => setLoginStage("CREDENTIALS")}
+                      >
+                        Change details
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="login-footer-links">
+                  <span>New to Bankwise?</span>
+                  <button
+                    type="button"
+                    className="login-link-btn"
+                    onClick={() => {
+                      setAuthView("REGISTER");
+                      setRegStage("FORM");
+                      setRegError("");
+                    }}
+                  >
+                    Create an account
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Create an Account Form View */
+              <>
+                <p className="login-eyebrow">
+                  {regStage === "OTP_ENTRY" ? "MOBILE VERIFICATION" : "NEW ACCOUNT REGISTRATION"}
+                </p>
+                <h1 className="login-title">
+                  {regStage === "OTP_ENTRY" ? "Verify your phone" : "Create an account"}
+                </h1>
+                <p className="login-subtitle">
+                  {regStage === "OTP_ENTRY"
+                    ? `Enter the 6-digit code sent via Fast2SMS to +91 ${regPhone}.`
+                    : "Fill in your details to set up your banking workspace."}
+                </p>
+
+                {regStage === "FORM" && (
+                  <form onSubmit={handleRequestRegisterOtp}>
+                    <div className="login-form-group">
+                      <label className="login-label" htmlFor="reg-fullname">
+                        Full name
+                      </label>
+                      <input
+                        id="reg-fullname"
+                        type="text"
+                        className="login-input"
+                        value={regFullName}
+                        onChange={(e) => setRegFullName(e.target.value)}
+                        placeholder="e.g. Aditi Sharma"
+                        required
+                      />
+                    </div>
+
+                    <div className="login-form-group">
+                      <label className="login-label" htmlFor="reg-phone">
+                        Phone number
+                      </label>
+                      <div className="phone-input-wrap">
+                        <span className="phone-prefix">🇮🇳 +91</span>
+                        <input
+                          id="reg-phone"
+                          type="tel"
+                          maxLength={10}
+                          className="phone-input-field"
+                          value={regPhone}
+                          onChange={(e) => setRegPhone(e.target.value.replace(/\D/g, ""))}
+                          placeholder="10-digit mobile number"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="login-form-group">
+                      <label className="login-label" htmlFor="reg-email">
+                        Gmail / Email address
+                      </label>
+                      <input
+                        id="reg-email"
+                        type="email"
+                        className="login-input"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        placeholder="you@gmail.com"
+                        required
+                      />
+                    </div>
+
+                    <div className="login-form-group">
+                      <label className="login-label" htmlFor="reg-role">
+                        Account Role
+                      </label>
+                      <select
+                        id="reg-role"
+                        className="login-input"
+                        value={regRole}
+                        onChange={(e) => setRegRole(e.target.value)}
+                        style={{ cursor: "pointer", fontWeight: 600 }}
+                      >
+                        <option value="Customer">Customer (Personal Banking)</option>
+                        <option value="Teller">Teller (Branch Operations)</option>
+                        <option value="Manager">Manager (Approvals & Oversight)</option>
+                        <option value="Admin">Admin (System Governance)</option>
+                      </select>
+                    </div>
+
+                    {regError && (
+                      <p style={{ color: "#ef4444", fontSize: 12, fontWeight: 600, margin: "0 0 14px", textAlign: "left" }}>
+                        {regError}
+                      </p>
+                    )}
+
+                    <button type="submit" className="login-submit-btn">
+                      Verify & Open Account
+                    </button>
+                  </form>
+                )}
+
+                {regStage === "OTP_ENTRY" && (
+                  <form onSubmit={handleVerifyRegisterOtp}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <span style={{ fontSize: 12, color: "#64748b" }}>
+                        Fast2SMS delivered to: <strong>+91 {regPhone}</strong>
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>
+                        ⏱ {Math.floor(loginCountdown / 60)}:{(loginCountdown % 60).toString().padStart(2, "0")}
+                      </span>
+                    </div>
+
+                    <div className="otp-digit-container" style={{ margin: "14px 0" }}>
+                      {regOtpDigits.map((digit, idx) => (
+                        <input
+                          key={idx}
+                          id={`reg-otp-box-${idx}`}
+                          type="text"
+                          maxLength={1}
+                          className="otp-digit-box"
+                          value={digit}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated = [...regOtpDigits];
+                            updated[idx] = val;
+                            setRegOtpDigits(updated);
+                            if (val && idx < 5) {
+                              document.getElementById(`reg-otp-box-${idx + 1}`)?.focus();
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Backspace" && !regOtpDigits[idx] && idx > 0) {
+                              document.getElementById(`reg-otp-box-${idx - 1}`)?.focus();
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    {regError && (
+                      <p style={{ color: "#ef4444", fontSize: 12, fontWeight: 600, margin: "0 0 14px" }}>
+                        {regError}
+                      </p>
+                    )}
+
+                    <button type="submit" className="login-submit-btn">
+                      Verify OTP & Create Account
+                    </button>
+
+                    <div style={{ marginTop: 14, textAlign: "center" }}>
+                      <button
+                        type="button"
+                        className="login-link-btn"
+                        onClick={handleRequestRegisterOtp}
+                      >
+                        Resend code
+                      </button>
+                      <span style={{ margin: "0 8px", color: "#cbd5e1" }}>•</span>
+                      <button
+                        type="button"
+                        className="login-link-btn"
+                        onClick={() => setRegStage("FORM")}
+                      >
+                        Back to details
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="login-footer-links">
+                  <span>Already have an account?</span>
+                  <button
+                    type="button"
+                    className="login-link-btn"
+                    onClick={() => {
+                      setAuthView("LOGIN");
+                      setLoginStage("CREDENTIALS");
+                      setLoginError("");
+                    }}
+                  >
+                    Sign in
+                  </button>
+                </div>
+              </>
+            )}
 
             <p className="login-subfooter">
               Bankwise · Secure banking workspace

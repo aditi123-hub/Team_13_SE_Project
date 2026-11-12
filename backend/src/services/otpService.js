@@ -16,8 +16,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-function getOtpKey(email, purpose) {
-  return `${purpose}:${email.toLowerCase()}`;
+function getOtpKey(target, purpose) {
+  return `${purpose}:${String(target || "").toLowerCase().trim()}`;
 }
 
 /**
@@ -36,8 +36,8 @@ async function sendRealSms(mobile, otp, purpose = "LOGIN") {
   const message = `Your Bankwise ${purposeLabel} OTP is ${otp}. Valid for 5 minutes. Do not share this code.`;
 
   // 1. Fast2SMS (India)
-  const fast2SmsKey = process.env.FAST2SMS_API_KEY;
-  if (fast2SmsKey) {
+  const fast2SmsKey = (process.env.FAST2SMS_API_KEY || "").trim();
+  if (fast2SmsKey && fast2SmsKey !== "your_fast2sms_api_key_here") {
     try {
       const postData = JSON.stringify({
         route: "otp",
@@ -60,7 +60,36 @@ async function sendRealSms(mobile, otp, purpose = "LOGIN") {
         let body = "";
         res.on("data", (c) => (body += c));
         res.on("end", () => {
-          console.log(`[Fast2SMS Gateway] Real SMS dispatched to +91 ${cleanMobile}. Status: ${res.statusCode}, Body: ${body}`);
+          console.log(`[Fast2SMS Gateway] Response for +91 ${cleanMobile}: Status ${res.statusCode} -> ${body}`);
+          // If OTP route failed, try quick SMS route as fallback
+          if (res.statusCode !== 200 || body.includes('"status_code":4') || body.includes('"status_code":5')) {
+            const fallbackData = JSON.stringify({
+              route: "q",
+              message: `Your Bankwise OTP is ${otp}. Valid for 5 minutes. Do not share.`,
+              language: "english",
+              flash: 0,
+              numbers: cleanMobile,
+            });
+            const fallbackReq = https.request({
+              hostname: "www.fast2sms.com",
+              path: "/dev/bulkV2",
+              method: "POST",
+              headers: {
+                authorization: fast2SmsKey,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(fallbackData),
+              },
+            }, (fallbackRes) => {
+              let fb = "";
+              fallbackRes.on("data", (c) => (fb += c));
+              fallbackRes.on("end", () => {
+                console.log(`[Fast2SMS Quick Route Fallback] Status ${fallbackRes.statusCode} -> ${fb}`);
+              });
+            });
+            fallbackReq.on("error", (e) => console.error("[Fast2SMS Fallback Error]:", e.message));
+            fallbackReq.write(fallbackData);
+            fallbackReq.end();
+          }
         });
       });
       req.on("error", (err) => console.error("[Fast2SMS Error]:", err.message));
@@ -156,16 +185,24 @@ async function sendRealSms(mobile, otp, purpose = "LOGIN") {
 async function sendOtp(email, purpose = "LOGIN", mobile = null) {
   const otp = crypto.randomInt(100000, 1000000).toString();
   const isTransfer = purpose === "TRANSFER";
-  const key = getOtpKey(email, purpose);
-
-  otpStore.set(key, {
+  const record = {
     hash: crypto.createHash("sha256").update(otp).digest("hex"),
     expiresAt: Date.now() + OTP_EXPIRY_MS,
     attempts: 0,
     otp, // Retained in-memory
-  });
+  };
 
-  const targetLabel = mobile ? `mobile +91 ${mobile} / ${email}` : email;
+  if (email) {
+    otpStore.set(getOtpKey(email, purpose), record);
+  }
+  if (mobile) {
+    const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
+    if (cleanMobile) {
+      otpStore.set(getOtpKey(cleanMobile, purpose), record);
+    }
+  }
+
+  const targetLabel = mobile ? `mobile +91 ${mobile} / ${email || "mobile"}` : email;
   console.log(`[BMS OTP SMS] ${isTransfer ? "Transfer" : "Login"} OTP for ${targetLabel}: ${otp} (Demo OTP 123456 also accepted)`);
 
   // Dispatch actual real-world SMS over cellular network
@@ -175,7 +212,7 @@ async function sendOtp(email, purpose = "LOGIN", mobile = null) {
   const user = process.env.SMTP_USER || process.env.EMAIL_USER;
   const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
 
-  if (host && user && pass && user !== "your-email@example.com") {
+  if (host && user && pass && user !== "your-email@example.com" && email) {
     transporter.sendMail({
       from: process.env.SMTP_FROM || user,
       to: email,
@@ -192,17 +229,26 @@ async function sendOtp(email, purpose = "LOGIN", mobile = null) {
   };
 }
 
-function verifyOtp(email, submittedOtp, purpose = "LOGIN") {
+function verifyOtp(target, submittedOtp, purpose = "LOGIN") {
   // Allow demo bypass code 123456 during development/demo testing
   if (submittedOtp === "123456" || submittedOtp === 123456) {
     return true;
   }
+  if (!target) return false;
 
-  const key = getOtpKey(email, purpose);
-  const record = otpStore.get(key);
+  const key = getOtpKey(target, purpose);
+  let record = otpStore.get(key);
+
+  // Fallback to 10-digit mobile if target was mobile string
+  if (!record && typeof target === "string") {
+    const clean = target.replace(/\D/g, "").slice(-10);
+    if (clean && clean !== target) {
+      record = otpStore.get(getOtpKey(clean, purpose));
+    }
+  }
 
   if (!record || Date.now() > record.expiresAt) {
-    otpStore.delete(key);
+    if (record) otpStore.delete(key);
     return false;
   }
 
@@ -230,5 +276,5 @@ function verifyOtp(email, submittedOtp, purpose = "LOGIN") {
   return valid;
 }
 
-module.exports = { sendOtp, verifyOtp };
+module.exports = { sendOtp, verifyOtp, sendRealSms };
 
